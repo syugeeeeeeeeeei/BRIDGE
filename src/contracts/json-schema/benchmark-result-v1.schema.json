@@ -1,0 +1,524 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge.local/schemas/benchmark-result-v1.schema.json",
+  "title": "BRIDGE Benchmark Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "suite_id",
+    "started_at",
+    "duration_ms",
+    "passed",
+    "execution",
+    "raw_runs",
+    "cases"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "bridge.benchmark.result.v1"
+    },
+    "suite_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact_id": {
+      "type": "string"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "passed": {
+      "type": "boolean"
+    },
+    "environment": {
+      "type": "object"
+    },
+    "output_metadata": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "raw_runs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/run"
+      }
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "randomized",
+        "run_order"
+      ],
+      "properties": {
+        "randomized": {
+          "type": "boolean"
+        },
+        "shuffle_seed": {
+          "type": "integer"
+        },
+        "shuffle_algorithm": {
+          "type": "string"
+        },
+        "run_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "mean",
+        "stddev",
+        "min",
+        "p50",
+        "p95",
+        "max",
+        "ci95_lower",
+        "ci95_upper"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mean": {
+          "type": "number"
+        },
+        "stddev": {
+          "type": "number",
+          "minimum": 0
+        },
+        "min": {
+          "type": "number"
+        },
+        "p50": {
+          "type": "number"
+        },
+        "p95": {
+          "type": "number"
+        },
+        "max": {
+          "type": "number"
+        },
+        "ci95_lower": {
+          "type": "number"
+        },
+        "ci95_upper": {
+          "type": "number"
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "required": [
+        "run_id",
+        "scenario_id",
+        "algorithm",
+        "graph_instance_id",
+        "query_id",
+        "seed",
+        "repetition",
+        "warmup",
+        "found",
+        "exact",
+        "work",
+        "solver_time_ms",
+        "end_to_end_time_ms",
+        "graph",
+        "query",
+        "quality",
+        "time_breakdown",
+        "system_metrics",
+        "run_ordinal",
+        "stable_digest"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_name": {
+          "type": "string"
+        },
+        "scenario_id": {
+          "type": "string"
+        },
+        "algorithm": {
+          "type": "string"
+        },
+        "graph_instance_id": {
+          "type": "string"
+        },
+        "query_id": {
+          "type": "string"
+        },
+        "target_kind": {
+          "type": "string"
+        },
+        "execution_path": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "integer"
+        },
+        "repetition": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "warmup": {
+          "type": "boolean"
+        },
+        "found": {
+          "type": "boolean"
+        },
+        "exact": {
+          "type": "boolean"
+        },
+        "distance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "work": {
+          "type": "object"
+        },
+        "solver_time_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "end_to_end_time_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "error_code": {
+          "type": "string"
+        },
+        "stable_digest": {
+          "type": "string"
+        },
+        "graph": {
+          "type": "object",
+          "properties": {
+            "generator": {
+              "type": "string"
+            },
+            "topology": {
+              "type": "string"
+            },
+            "seed": {
+              "type": "integer"
+            },
+            "nodes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "edges": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "directed": {
+              "type": "boolean"
+            },
+            "dataset": {
+              "$ref": "#/$defs/dataset_metadata"
+            }
+          }
+        },
+        "query": {
+          "type": "object"
+        },
+        "quality": {
+          "type": "object"
+        },
+        "time_breakdown": {
+          "$ref": "#/$defs/time_breakdown"
+        },
+        "system_metrics": {
+          "$ref": "#/$defs/system_metrics"
+        },
+        "run_ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "observation": {
+          "type": "object"
+        },
+        "observation_overhead_ratio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "path": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "graph_spec": {
+          "type": "object"
+        },
+        "budget_ledger": {
+          "type": "object"
+        },
+        "trace_manifest_path": {
+          "type": "string"
+        },
+        "trace_path": {
+          "type": "string"
+        }
+      }
+    },
+    "case": {
+      "type": "object",
+      "required": [
+        "scenario_id",
+        "algorithm",
+        "runs",
+        "found_rate",
+        "exact_rate",
+        "average_distance",
+        "average_work",
+        "average_time_ms",
+        "work_statistics",
+        "solver_time_statistics",
+        "end_to_end_time_statistics",
+        "query_id"
+      ],
+      "properties": {
+        "scenario_id": {
+          "type": "string"
+        },
+        "algorithm": {
+          "type": "string"
+        },
+        "target_kind": {
+          "type": "string"
+        },
+        "execution_path": {
+          "type": "string"
+        },
+        "runs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "found_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "exact_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "average_distance": {
+          "type": "number"
+        },
+        "average_work": {
+          "type": "number",
+          "minimum": 0
+        },
+        "average_time_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "average_solver_time_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "average_end_to_end_time_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "min_distance": {
+          "type": "number"
+        },
+        "max_distance": {
+          "type": "number"
+        },
+        "work_statistics": {
+          "$ref": "#/$defs/stats"
+        },
+        "solver_time_statistics": {
+          "$ref": "#/$defs/stats"
+        },
+        "end_to_end_time_statistics": {
+          "$ref": "#/$defs/stats"
+        },
+        "query_id": {
+          "type": "string"
+        },
+        "metric_statistics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/stats"
+          }
+        },
+        "failure_reasons": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "ablation": {
+          "type": "object"
+        }
+      }
+    },
+    "time_breakdown": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_ms",
+        "solver_ms"
+      ],
+      "properties": {
+        "total_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "solver_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "truss_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "anchor_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "bolts_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "fallback_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "supervisor_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "arbiter_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "orchestration_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "gate_ms": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "system_metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "alloc_bytes",
+        "malloc_count",
+        "gc_count",
+        "heap_alloc_before",
+        "heap_alloc_after",
+        "heap_alloc_boundary_max"
+      ],
+      "properties": {
+        "alloc_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "malloc_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gc_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "heap_alloc_before": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "heap_alloc_after": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "heap_alloc_boundary_max": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "heap_alloc_sampled_peak": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "dataset_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "source",
+        "license",
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "license": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "preprocessing": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

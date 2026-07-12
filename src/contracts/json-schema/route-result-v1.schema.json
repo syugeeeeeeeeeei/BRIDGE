@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge.local/schemas/route-result-v1.schema.json",
+  "title": "BRIDGE Route Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "found",
+    "path",
+    "exact",
+    "work",
+    "time_ms",
+    "solver_time_ms",
+    "time_breakdown"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "bridge.route.result.v1"
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "found",
+        "unreachable",
+        "budget_exhausted",
+        "timeout"
+      ]
+    },
+    "found": {
+      "type": "boolean"
+    },
+    "distance": {
+      "type": "number",
+      "minimum": 0
+    },
+    "path": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "exact": {
+      "type": "boolean"
+    },
+    "solver_name": {
+      "type": "string"
+    },
+    "work": {
+      "type": "object"
+    },
+    "time_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "error_code": {
+      "type": "string"
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "event_count",
+        "truncated"
+      ],
+      "properties": {
+        "mode": {
+          "enum": [
+            "off",
+            "summary",
+            "trace",
+            "profile"
+          ]
+        },
+        "event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dropped_events": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {"type": "boolean"},
+        "overhead_ns": {"type": "integer", "minimum": 0},
+        "sink_write_ns": {"type": "integer", "minimum": 0},
+        "summary": {"type": "object"}
+      }
+    },
+    "solver_time_ms": {
+      "type": "number",
+      "minimum": 0
+    },
+    "time_breakdown": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "found": {
+            "const": true
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "distance"
+        ]
+      }
+    }
+  ]
+}

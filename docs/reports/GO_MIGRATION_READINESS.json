@@ -1,0 +1,41 @@
+{
+  "schema": "bridge_migration_readiness_v1",
+  "thresholds": {
+    "valid_path_rate_min": 1.0,
+    "connected_found_rate_min": 0.99,
+    "mean_distance_ratio_max": 1.05,
+    "p95_distance_ratio_max": 1.15,
+    "worst_distance_ratio_max": 1.35,
+    "exact_mode_exact_rate_min": 1.0,
+    "budget_violation_rate_max": 0.0,
+    "repeatability_rate_min": 1.0,
+    "trend_correlation_min": 0.7,
+    "topology_coverage_min": 0.9
+  },
+  "metrics": {
+    "cases_go": 75,
+    "cases_python": 75,
+    "paired_cases": 75,
+    "valid_path_rate": 1.0,
+    "connected_found_rate": 1.0,
+    "mean_distance_ratio": 1.0077667845816636,
+    "p95_distance_ratio": 1.0127261393677356,
+    "worst_distance_ratio": 1.0161021377103125,
+    "topology_coverage": 1.0,
+    "found_agreement": 1.0,
+    "distance_ratio_spearman": 0.7948379696013765,
+    "work_spearman": 0.020492786510743155,
+    "trend_correlation": 0.40766537805605985
+  },
+  "checks": {
+    "valid_path_rate": true,
+    "connected_found_rate": true,
+    "mean_distance_ratio": true,
+    "p95_distance_ratio": true,
+    "worst_distance_ratio": true,
+    "trend_correlation": false,
+    "topology_coverage": true,
+    "found_agreement": true
+  },
+  "migration_complete": false
+}

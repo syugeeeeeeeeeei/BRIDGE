@@ -1,0 +1,27 @@
+{
+  "darwin-amd64": {
+    "file": "bin/darwin-amd64/bridge",
+    "sha256": "2c59378e503d85aba077576bc07da37363c6a135a7dc6de2b909b3527167e8bd",
+    "bridge_version": "0.14.0"
+  },
+  "darwin-arm64": {
+    "file": "bin/darwin-arm64/bridge",
+    "sha256": "f5c7e492a6a96240cc5b731d95d498f1ce544c257b372ef06009bca74701c7d3",
+    "bridge_version": "0.14.0"
+  },
+  "linux-amd64": {
+    "file": "bin/linux-amd64/bridge",
+    "sha256": "a7897803b33d9186878683c26edad760bab9102c0f778e2e9aa27fcec39d5173",
+    "bridge_version": "0.14.0"
+  },
+  "linux-arm64": {
+    "file": "bin/linux-arm64/bridge",
+    "sha256": "54d628a3c37ea677d150677d61fd9f1bb858a0e73971084a34e352eab3736262",
+    "bridge_version": "0.14.0"
+  },
+  "windows-amd64": {
+    "file": "bin/windows-amd64/bridge.exe",
+    "sha256": "fb17bd08625c4dd7ad0fd11e24cda75895fa5968caed8122d6defade2d9325f7",
+    "bridge_version": "0.14.0"
+  }
+}

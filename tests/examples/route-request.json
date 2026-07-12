@@ -1,0 +1,43 @@
+{
+  "schema_version": "bridge.route.v1",
+  "request_id": "request-001",
+  "graph": {
+    "type": "inline",
+    "directed": false,
+    "nodes": [
+      {
+        "id": 0
+      },
+      {
+        "id": 1
+      },
+      {
+        "id": 2
+      }
+    ],
+    "edges": [
+      {
+        "from": 0,
+        "to": 1,
+        "weight": 1.0
+      },
+      {
+        "from": 1,
+        "to": 2,
+        "weight": 2.0
+      }
+    ]
+  },
+  "route": {
+    "source": 0,
+    "target": 2,
+    "mode": "balanced"
+  },
+  "budget": {
+    "total_work": 100000,
+    "timeout_ms": 5000
+  },
+  "observation": {
+    "mode": "off"
+  }
+}

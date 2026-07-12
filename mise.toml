@@ -1,0 +1,13 @@
+[tools]
+go = "1.22"
+python = "3.12"
+node = "latest"
+
+[task_config]
+includes = [
+  "tasks/mise.tasks.setup.toml",
+  "tasks/mise.tasks.build.toml",
+  "tasks/mise.tasks.sdk.toml",
+  "tasks/mise.tasks.test.toml",
+  "tasks/mise.tasks.verify.toml",
+]

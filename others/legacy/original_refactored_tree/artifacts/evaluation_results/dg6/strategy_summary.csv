@@ -1,0 +1,14 @@
+cases,mean_distance_ratio,mean_time_ms,mean_work,strategy,topology,within_10pct_rate,worst_distance_ratio
+6,1.0,7.011604333001742,195,portal,clustered,1.0,1.0
+6,1.0,3.023269000247334,430,geometric_corridor,culdesac,1.0,1.0
+6,1.0,20.35286833339948,2007,geometric_corridor,disconnected,1.0,1.0
+6,1.0,10.973327833350291,1156.8333333333333,geometric_corridor,double_wall,1.0,1.0
+6,1.0,3.0620271665308487,450,geometric_corridor,open,1.0,1.0
+6,1.0613365589945332,2.7739661668420013,292.5,geometric_corridor,random_geometric,1.0,1.0945885541825005
+6,1.0,2.7398068333847427,394.6666666666667,geometric_corridor,random_obstacles,1.0,1.0
+6,1.0,1.8162045003009553,216.83333333333334,hub_aware,scale_free_no_pos,1.0,1.0
+6,1.0,2.950925166715024,216.83333333333334,hub_aware,scale_free_pos,1.0,1.0
+6,1.0,8.190984000066237,388.5,geometric_corridor,spiral,1.0,1.0
+6,1.0,3.018319833396769,429.5,geometric_corridor,u_shape,1.0,1.0
+6,1.0,3.123027166717899,437.5,geometric_corridor,wall,1.0,1.0
+6,1.008471660723822,3.8192895000671947,716.8333333333334,weighted_cost,weighted_noise,1.0,1.04527567976037

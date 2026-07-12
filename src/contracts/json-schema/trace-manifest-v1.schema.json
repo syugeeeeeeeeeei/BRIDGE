@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge.local/schemas/trace-manifest-v1.schema.json",
+  "title": "BRIDGE Trace Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "created_at",
+    "ultrasound_mode",
+    "sample_rate",
+    "sampling_algorithm",
+    "event_count",
+    "dropped_event_count",
+    "truncated",
+    "observer_overhead_ns",
+    "sink_write_ns",
+    "stable_digest",
+    "trace_sha256",
+    "trace_file"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "bridge.trace.v1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ultrasound_mode": {
+      "enum": [
+        "trace",
+        "profile"
+      ]
+    },
+    "sample_rate": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 1
+    },
+    "sampling_algorithm": {
+      "const": "fnv1a-seed-ordinal-kind-v1"
+    },
+    "event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "dropped_event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "truncated": {
+      "type": "boolean"
+    },
+    "observer_overhead_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sink_write_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stable_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "trace_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "trace_file": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

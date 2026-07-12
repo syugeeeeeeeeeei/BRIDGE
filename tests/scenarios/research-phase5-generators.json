@@ -1,0 +1,13 @@
+{
+  "schema_version":"bridge.benchmark.v1",
+  "suite":{"id":"phase5-generators","description":"Generalization across synthetic graph families"},
+  "execution":{"repetitions":3,"warmup_runs":1,"seeds":[11,29],"jobs":1,"randomize_order":true},
+  "algorithms":["bridge","anchor","dijkstra"],
+  "observation":{"mode":"summary","sample_rate":1},
+  "output":{"capture_environment":true,"save_raw_results":true,"output_dir":"artifacts/phase5-generators"},
+  "scenarios":[
+    {"id":"community-256","graph":{"generator":"community","nodes":256,"communities":8},"queries":[{"id":"diameter","strategy":"opposite-corners"}],"route":{"mode":"balanced","workers":1}},
+    {"id":"maze-256","graph":{"generator":"maze","nodes":256},"queries":[{"id":"diameter","strategy":"opposite-corners"}],"route":{"mode":"balanced","workers":1}},
+    {"id":"adversarial-256","graph":{"generator":"adversarial","nodes":256},"queries":[{"id":"diameter","strategy":"opposite-corners"}],"route":{"mode":"balanced","workers":1}}
+  ]
+}

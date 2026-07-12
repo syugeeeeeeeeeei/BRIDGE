@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge.local/schemas/trace-event-v1.schema.json",
+  "title": "BRIDGE Trace Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "phase",
+    "kind"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "bridge.trace.v1"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "logical_step": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "scheduled_step": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "elapsed_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "delta_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "component": {
+      "type": "string"
+    },
+    "lane": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kind": {
+      "enum": [
+        "search_started",
+        "search_finished",
+        "component_started",
+        "component_finished",
+        "frontier_enqueued",
+        "frontier_selected",
+        "node_expanded",
+        "edge_evaluated",
+        "relaxation",
+        "budget_extended",
+        "candidate_submitted",
+        "incumbent_updated",
+        "connector_started",
+        "connector_succeeded",
+        "connector_failed",
+        "progress_reported",
+        "emergency_reported",
+        "directive_issued",
+        "fallback_started",
+        "fallback_finished",
+        "certification_started",
+        "certification_finished",
+        "state_reuse_started",
+        "state_reuse_applied",
+        "state_reuse_rejected",
+        "state_reuse_finished",
+        "action"
+      ]
+    },
+    "action": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "work_before": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "work_after": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "attributes": {
+      "type": "object"
+    }
+  }
+}

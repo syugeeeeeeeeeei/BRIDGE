@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BRIDGE Health Profile v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "candidate_algorithm",
+    "validation",
+    "policy"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "bridge.health-profile.v1"
+    },
+    "candidate_algorithm": {
+      "type": "string",
+      "minLength": 1
+    },
+    "performance_reference_algorithm": {
+      "type": "string"
+    },
+    "exact_reference_algorithm": {
+      "enum": [
+        "dijkstra",
+        "bidirectional_dijkstra"
+      ]
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "distance_absolute_tolerance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "distance_relative_tolerance": {
+          "type": "number",
+          "minimum": 0
+        },
+        "require_exact_reference": {
+          "type": "boolean"
+        },
+        "require_work_trace": {
+          "type": "boolean"
+        },
+        "require_budget_ledger": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "distance_absolute_tolerance",
+        "distance_relative_tolerance",
+        "require_exact_reference"
+      ]
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path_valid_rate_min": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "distance_ratio_p95_max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "work_ratio_mean_max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "solver_time_ratio_p95_max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "alloc_bytes_ratio_mean_max": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "false_positive_count_max": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "false_negative_count_max": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "work_mismatch_count_max": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

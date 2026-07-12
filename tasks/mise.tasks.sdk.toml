@@ -1,0 +1,23 @@
+["sdk:binaries"]
+description = "Build and bundle BRIDGE binaries for all supported SDK platforms"
+run = "python ./tasks/dev_tasks.py sdk-binaries"
+
+["sdk:python:package"]
+description = "Build the Python SDK package"
+run = "python ./tasks/dev_tasks.py package-python"
+
+["sdk:typescript:install"]
+description = "Install TypeScript SDK dependencies"
+run = "python ./tasks/dev_tasks.py install-typescript"
+
+["sdk:typescript:package"]
+description = "Install dependencies and build the TypeScript SDK package"
+depends = ["sdk:typescript:install"]
+run = "python ./tasks/dev_tasks.py package-typescript"
+
+["sdk:package"]
+description = "Build Python and TypeScript SDK packages"
+depends = [
+  "sdk:python:package",
+  "sdk:typescript:package",
+]

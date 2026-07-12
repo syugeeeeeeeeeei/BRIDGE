@@ -1,0 +1,100 @@
+{
+  "schema_version": "bridge.benchmark.v1",
+  "suite": {
+    "id": "generator-topology-matrix-fixed-seed",
+    "description": "Full matrix across all public generators, topologies, algorithms, and requested node sizes with a fixed seed"
+  },
+  "execution": {
+    "repetitions": 1,
+    "seeds": [20260712],
+    "jobs": 1,
+    "timeout": "60s"
+  },
+  "algorithms": [
+    "bridge",
+    "anchor",
+    "dijkstra",
+    "bidirectional_dijkstra",
+    "astar",
+    "weighted_astar",
+    "reachability"
+  ],
+  "observation": {
+    "mode": "off"
+  },
+  "output": {
+    "output_dir": "./others/results/generator-topology-matrix-fixed-seed",
+    "save_raw_results": true,
+    "save_trace": false
+  },
+  "scenarios": [
+    {"id":"grid-open-n10","graph":{"generator":"grid","nodes":10,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n50","graph":{"generator":"grid","nodes":50,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n100","graph":{"generator":"grid","nodes":100,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n500","graph":{"generator":"grid","nodes":500,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n1000","graph":{"generator":"grid","nodes":1000,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n2000","graph":{"generator":"grid","nodes":2000,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n5000","graph":{"generator":"grid","nodes":5000,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n10000","graph":{"generator":"grid","nodes":10000,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n20000","graph":{"generator":"grid","nodes":20000,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n50000","graph":{"generator":"grid","nodes":50000,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-open-n100000","graph":{"generator":"grid","nodes":100000,"topology":"open"},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+
+    {"id":"grid-wall-n10","graph":{"generator":"grid","nodes":10,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n50","graph":{"generator":"grid","nodes":50,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n100","graph":{"generator":"grid","nodes":100,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n500","graph":{"generator":"grid","nodes":500,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n1000","graph":{"generator":"grid","nodes":1000,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n2000","graph":{"generator":"grid","nodes":2000,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n5000","graph":{"generator":"grid","nodes":5000,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n10000","graph":{"generator":"grid","nodes":10000,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n20000","graph":{"generator":"grid","nodes":20000,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n50000","graph":{"generator":"grid","nodes":50000,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-wall-n100000","graph":{"generator":"grid","nodes":100000,"topology":"wall","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+
+    {"id":"grid-u-shape-n10","graph":{"generator":"grid","nodes":10,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n50","graph":{"generator":"grid","nodes":50,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n100","graph":{"generator":"grid","nodes":100,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n500","graph":{"generator":"grid","nodes":500,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n1000","graph":{"generator":"grid","nodes":1000,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n2000","graph":{"generator":"grid","nodes":2000,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n5000","graph":{"generator":"grid","nodes":5000,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n10000","graph":{"generator":"grid","nodes":10000,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n20000","graph":{"generator":"grid","nodes":20000,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n50000","graph":{"generator":"grid","nodes":50000,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-u-shape-n100000","graph":{"generator":"grid","nodes":100000,"topology":"u_shape","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+
+    {"id":"grid-culdesac-n10","graph":{"generator":"grid","nodes":10,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n50","graph":{"generator":"grid","nodes":50,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n100","graph":{"generator":"grid","nodes":100,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n500","graph":{"generator":"grid","nodes":500,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n1000","graph":{"generator":"grid","nodes":1000,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n2000","graph":{"generator":"grid","nodes":2000,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n5000","graph":{"generator":"grid","nodes":5000,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n10000","graph":{"generator":"grid","nodes":10000,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n20000","graph":{"generator":"grid","nodes":20000,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n50000","graph":{"generator":"grid","nodes":50000,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-culdesac-n100000","graph":{"generator":"grid","nodes":100000,"topology":"culdesac","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+
+    {"id":"grid-disconnected-n10","graph":{"generator":"grid","nodes":10,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n50","graph":{"generator":"grid","nodes":50,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n100","graph":{"generator":"grid","nodes":100,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n500","graph":{"generator":"grid","nodes":500,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n1000","graph":{"generator":"grid","nodes":1000,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n2000","graph":{"generator":"grid","nodes":2000,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n5000","graph":{"generator":"grid","nodes":5000,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n10000","graph":{"generator":"grid","nodes":10000,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n20000","graph":{"generator":"grid","nodes":20000,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n50000","graph":{"generator":"grid","nodes":50000,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"grid-disconnected-n100000","graph":{"generator":"grid","nodes":100000,"topology":"disconnected","noise":0.05},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+
+    {"id":"random-geometric-n10","graph":{"generator":"random_geometric","nodes":10,"k":8},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"random-geometric-n50","graph":{"generator":"random_geometric","nodes":50,"k":8},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"random-geometric-n100","graph":{"generator":"random_geometric","nodes":100,"k":8},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"random-geometric-n500","graph":{"generator":"random_geometric","nodes":500,"k":8},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"random-geometric-n1000","graph":{"generator":"random_geometric","nodes":1000,"k":8},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"random-geometric-n2000","graph":{"generator":"random_geometric","nodes":2000,"k":8},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"random-geometric-n5000","graph":{"generator":"random_geometric","nodes":5000,"k":8},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}},
+    {"id":"random-geometric-n10000","graph":{"generator":"random_geometric","nodes":10000,"k":8},"endpoints":{"strategy":"opposite-corners"},"route":{"mode":"balanced","workers":1}}
+  ]
+}

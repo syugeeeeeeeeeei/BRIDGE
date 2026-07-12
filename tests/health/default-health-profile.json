@@ -1,0 +1,20 @@
+{
+  "schema_version": "bridge.health-profile.v1",
+  "candidate_algorithm": "bridge",
+  "performance_reference_algorithm": "dijkstra",
+  "exact_reference_algorithm": "dijkstra",
+  "validation": {
+    "distance_absolute_tolerance": 1e-09,
+    "distance_relative_tolerance": 1e-09,
+    "require_exact_reference": true
+  },
+  "policy": {
+    "path_valid_rate_min": 1.0,
+    "false_positive_count_max": 0,
+    "false_negative_count_max": 0,
+    "work_mismatch_count_max": 0,
+    "distance_ratio_p95_max": 1.05,
+    "solver_time_ratio_p95_max": 10.0,
+    "alloc_bytes_ratio_mean_max": 2.0
+  }
+}

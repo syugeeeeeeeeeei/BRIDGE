@@ -1,0 +1,25 @@
+{
+  "schema_version": "bridge.dataset.v1",
+  "id": "tiny-road-network",
+  "source": "BRIDGE synthetic test fixture",
+  "license": "CC0-1.0",
+  "directed": false,
+  "nodes": 6,
+  "edges": [
+    {"from":0,"to":1,"weight":1.0},
+    {"from":1,"to":2,"weight":1.0},
+    {"from":2,"to":5,"weight":1.0},
+    {"from":0,"to":3,"weight":1.2},
+    {"from":3,"to":4,"weight":1.2},
+    {"from":4,"to":5,"weight":1.2}
+  ],
+  "positions": [
+    {"node":0,"x":0,"y":0},{"node":1,"x":1,"y":0},{"node":2,"x":2,"y":0},
+    {"node":3,"x":0,"y":1},{"node":4,"x":1,"y":1},{"node":5,"x":2,"y":1}
+  ],
+  "default_query": {"source":0,"target":5},
+  "preprocessing": [
+    {"name":"normalize_node_ids","parameters":{"order":"ascending"}},
+    {"name":"validate_non_negative_weights"}
+  ]
+}

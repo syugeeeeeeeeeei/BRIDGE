@@ -1,0 +1,17 @@
+{
+  "schema_version": "bridge.benchmark.v1",
+  "suite": {"id": "research-foundation-smoke", "description": "v0.14.1 raw-run contract smoke scenario"},
+  "execution": {"repetitions": 2, "warmup_runs": 1, "seeds": [101, 202], "jobs": 1, "randomize_order": true},
+  "algorithms": ["bridge", "dijkstra"],
+  "observation": {"mode": "off", "sample_rate": 1.0},
+  "output": {"artifact_id": "research-foundation-smoke", "capture_environment": true, "metadata": {"purpose": "contract-smoke"}},
+  "scenarios": [{
+    "id": "grid-100",
+    "graph": {"generator": "grid", "nodes": 100, "topology": "open"},
+    "queries": [
+      {"id": "corners", "strategy": "opposite-corners"},
+      {"id": "inner", "strategy": "explicit", "source": 10, "target": 89}
+    ],
+    "route": {"mode": "balanced", "workers": 1}
+  }]
+}

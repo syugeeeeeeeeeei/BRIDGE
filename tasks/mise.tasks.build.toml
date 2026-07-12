@@ -1,0 +1,11 @@
+[build]
+description = "Build the BRIDGE CLI for the current platform"
+run = "python ./tasks/dev_tasks.py build"
+
+["build:debug"]
+description = "Build an unstripped BRIDGE CLI for the current platform"
+run = "python ./tasks/dev_tasks.py build --debug"
+
+["build:release"]
+description = "Build a stripped BRIDGE CLI for the current platform"
+run = "python ./tasks/dev_tasks.py build --release"
