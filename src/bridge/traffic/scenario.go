@@ -53,6 +53,7 @@ type OutputSpec struct {
 	OutputDir          string            `json:"output_dir,omitempty" yaml:"output_dir,omitempty"`
 	ArtifactID         string            `json:"artifact_id,omitempty" yaml:"artifact_id,omitempty"`
 	SaveRawResults     bool              `json:"save_raw_results,omitempty" yaml:"save_raw_results,omitempty"`
+	SaveGraphSnapshot  bool              `json:"save_graph_snapshot,omitempty" yaml:"save_graph_snapshot,omitempty"`
 	SaveTrace          bool              `json:"save_trace,omitempty" yaml:"save_trace,omitempty"`
 	CaptureEnvironment bool              `json:"capture_environment,omitempty" yaml:"capture_environment,omitempty"`
 	Metadata           map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
@@ -229,8 +230,8 @@ func (s BenchmarkScenario) Validate() error {
 	if s.Observation.SampleRate <= 0 || s.Observation.SampleRate > 1 {
 		return errors.New("observation.sample_rate must be > 0 and <= 1")
 	}
-	if s.Output.OutputDir == "" && (s.Output.SaveRawResults || s.Output.SaveTrace) {
-		return errors.New("output.output_dir is required when output.save_raw_results or output.save_trace is enabled")
+	if s.Output.OutputDir == "" && (s.Output.SaveRawResults || s.Output.SaveGraphSnapshot || s.Output.SaveTrace) {
+		return errors.New("output.output_dir is required when output.save_raw_results, output.save_graph_snapshot, or output.save_trace is enabled")
 	}
 	if s.Output.SaveTrace && s.Observation.Mode == "off" {
 		return errors.New("observation_config.level must not be off when output.save_trace is enabled")
@@ -800,6 +801,27 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 				return out, err
 			}
 		}
+		if s.Output.OutputDir != "" && (s.Output.SaveRawResults || s.Output.SaveGraphSnapshot) {
+			runDir := filepath.Join(s.Output.OutputDir, c.ID, runDirName)
+			if s.Output.SaveGraphSnapshot {
+				graphPath := filepath.Join(runDir, "graph.json")
+				graphSnapshot := graphToInput(g)
+				if err := writeJSONFile(graphPath, graphSnapshot, opts.Overwrite); err != nil {
+					stopProgress(false, completedRuns)
+					return out, err
+				}
+				raw.References.GraphSnapshotPath = graphPath
+				if absolute, absErr := filepath.Abs(raw.References.GraphSnapshotPath); absErr == nil {
+					raw.References.GraphSnapshotPath = absolute
+				}
+				graphSHA, shaErr := fileSHA256(raw.References.GraphSnapshotPath)
+				if shaErr != nil {
+					stopProgress(false, completedRuns)
+					return out, shaErr
+				}
+				raw.References.GraphSnapshotSHA256 = graphSHA
+			}
+		}
 		out.Runs = append(out.Runs, raw)
 		if s.Output.OutputDir != "" && s.Output.SaveRawResults {
 			runDir := filepath.Join(s.Output.OutputDir, c.ID, runDirName)
@@ -1054,6 +1076,15 @@ func writeTraceManifest(dir string, raw BenchmarkRun, sampleRate float64, metric
 		"trace_file":           filepath.Base(tracePath),
 	}
 	return writeJSONFile(filepath.Join(dir, "manifest.json"), manifest, true)
+}
+
+func fileSHA256(path string) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:]), nil
 }
 
 func formatProgressDuration(d time.Duration) string {

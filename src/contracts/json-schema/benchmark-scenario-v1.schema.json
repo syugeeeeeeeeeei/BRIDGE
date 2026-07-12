@@ -111,6 +111,9 @@
         "save_raw_results": {
           "type": "boolean"
         },
+        "save_graph_snapshot": {
+          "type": "boolean"
+        },
         "save_trace": {
           "type": "boolean"
         },

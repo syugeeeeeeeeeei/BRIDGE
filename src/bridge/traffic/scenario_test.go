@@ -90,14 +90,14 @@ func TestRunScenarioWritesOutputArtifacts(t *testing.T) {
 		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1},
 		Algorithms:    []string{"bridge"},
 		Observation:   ObservationSpec{Mode: "off"},
-		Output:        OutputSpec{OutputDir: dir, SaveRawResults: true},
+		Output:        OutputSpec{OutputDir: dir, SaveRawResults: true, SaveGraphSnapshot: true},
 		Scenarios: []ScenarioCase{{
 			ID:        "grid",
 			Graph:     GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"},
 			Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"},
 		}},
 	}
-	_, err := RunScenarioWithOptions(context.Background(), s, RunScenarioOptions{Overwrite: true})
+	r, err := RunScenarioWithOptions(context.Background(), s, RunScenarioOptions{Overwrite: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,6 +106,16 @@ func TestRunScenarioWritesOutputArtifacts(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "grid", "bridge__seed-1__rep-1", "raw-result.json")); err != nil {
 		t.Fatal(err)
+	}
+	graphPath := filepath.Join(dir, "grid", "bridge__seed-1__rep-1", "graph.json")
+	if _, err := os.Stat(graphPath); err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Runs) != 1 {
+		t.Fatalf("runs=%d", len(r.Runs))
+	}
+	if r.Runs[0].References.GraphSnapshotPath == "" || r.Runs[0].References.GraphSnapshotSHA256 == "" {
+		t.Fatalf("graph snapshot reference missing: %+v", r.Runs[0].References)
 	}
 }
 func TestScenarioRejectsUnsupportedAlgorithm(t *testing.T) {
@@ -121,5 +131,14 @@ func TestScenarioRejectsUnknownAlgorithm(t *testing.T) {
 	s.ApplyDefaults()
 	if s.Validate() == nil {
 		t.Fatal("expected validation error")
+	}
+}
+
+func TestScenarioRejectsGraphSnapshotOutputWithoutDir(t *testing.T) {
+	s := validScenario()
+	s.Output.SaveGraphSnapshot = true
+	s.Output.OutputDir = ""
+	if err := s.Validate(); err == nil {
+		t.Fatal("expected error")
 	}
 }

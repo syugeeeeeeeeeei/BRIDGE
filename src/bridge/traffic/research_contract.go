@@ -129,9 +129,11 @@ type Observations struct {
 }
 
 type References struct {
-	GraphSpecification GeneratorSpec `json:"graph_specification"`
-	TraceManifestPath  string        `json:"trace_manifest_path,omitempty"`
-	TracePath          string        `json:"trace_path,omitempty"`
+	GraphSpecification  GeneratorSpec `json:"graph_specification"`
+	GraphSnapshotPath   string        `json:"graph_snapshot_path,omitempty"`
+	GraphSnapshotSHA256 string        `json:"graph_snapshot_sha256,omitempty"`
+	TraceManifestPath   string        `json:"trace_manifest_path,omitempty"`
+	TracePath           string        `json:"trace_path,omitempty"`
 }
 
 type BenchmarkRun struct {

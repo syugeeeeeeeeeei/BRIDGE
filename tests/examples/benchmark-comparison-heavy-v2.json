@@ -29,6 +29,7 @@
     "output_dir": "./others/results/benchmark-comparison-heavy-v2",
     "artifact_id": "benchmark-comparison-heavy-v2",
     "save_raw_results": true,
+    "save_graph_snapshot": true,
     "save_trace": true,
     "capture_environment": true,
     "metadata": {
