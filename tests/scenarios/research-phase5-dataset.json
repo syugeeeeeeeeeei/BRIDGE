@@ -1,9 +1,0 @@
-{
-  "schema_version":"bridge.benchmark.v1",
-  "suite":{"id":"phase5-dataset","description":"Dataset ingestion reproducibility fixture"},
-  "execution":{"repetitions":3,"seeds":[1],"jobs":1},
-  "algorithms":["bridge","dijkstra"],
-  "observation":{"mode":"summary","sample_rate":1},
-  "output":{"capture_environment":true,"save_raw_results":true,"output_dir":"artifacts/phase5-dataset"},
-  "scenarios":[{"id":"tiny-road-network","graph":{"generator":"dataset","dataset_path":"tests/datasets/tiny-road-network.json","dataset_format":"bridge.dataset.v1.json"},"queries":[{"id":"default","strategy":"opposite-corners"}],"route":{"mode":"balanced","workers":1}}]
-}
