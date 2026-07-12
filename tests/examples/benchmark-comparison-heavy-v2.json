@@ -1,0 +1,164 @@
+{
+  "schema_version": "bridge.benchmark.v2",
+  "suite": {
+    "id": "benchmark-comparison-heavy-v2",
+    "description": "Heavier local comparison benchmark across multiple graph families and solver choices."
+  },
+  "execution": {
+    "repetitions": 3,
+    "warmup_runs": 1,
+    "seeds": [11, 29, 47],
+    "jobs": 1,
+    "timeout": "45s",
+    "randomize_order": true
+  },
+  "algorithms": [
+    "bridge",
+    "anchor",
+    "dijkstra",
+    "bidirectional_dijkstra",
+    "astar",
+    "weighted_astar",
+    "reachability"
+  ],
+  "observation_config": {
+    "level": "off",
+    "sample_rate": 1.0
+  },
+  "output": {
+    "output_dir": "./others/results/benchmark-comparison-heavy-v2",
+    "artifact_id": "benchmark-comparison-heavy-v2",
+    "save_raw_results": true,
+    "save_trace": false,
+    "capture_environment": true,
+    "metadata": {
+      "purpose": "local-heavy-comparison",
+      "timing_policy": "single-job-observation-off",
+      "comparison_focus": "algorithm-behavior-across-graph-families"
+    }
+  },
+  "acceptance": {
+    "path_found_rate_min": 0.95,
+    "mean_work_actions_max": 500000
+  },
+  "scenarios": [
+    {
+      "id": "grid-open-400",
+      "graph": {
+        "generator": "grid",
+        "requested_node_count": 400,
+        "topology": "open"
+      },
+      "endpoints": {
+        "query_selection_method": "generator_default_endpoints"
+      },
+      "route": {
+        "route_mode": "balanced",
+        "logical_worker_count": 1
+      },
+      "budget": {
+        "total_work": 250000,
+        "timeout_ms": 12000
+      }
+    },
+    {
+      "id": "grid-wall-400",
+      "graph": {
+        "generator": "grid",
+        "requested_node_count": 400,
+        "topology": "wall",
+        "edge_weight_noise": 0.03
+      },
+      "endpoints": {
+        "query_selection_method": "generator_default_endpoints"
+      },
+      "route": {
+        "route_mode": "balanced",
+        "logical_worker_count": 1
+      },
+      "budget": {
+        "total_work": 300000,
+        "timeout_ms": 12000
+      }
+    },
+    {
+      "id": "grid-u-shape-900",
+      "graph": {
+        "generator": "grid",
+        "requested_node_count": 900,
+        "topology": "u_shape",
+        "edge_weight_noise": 0.03
+      },
+      "endpoints": {
+        "query_selection_method": "generator_default_endpoints"
+      },
+      "route": {
+        "route_mode": "balanced",
+        "logical_worker_count": 1
+      },
+      "budget": {
+        "total_work": 400000,
+        "timeout_ms": 18000
+      }
+    },
+    {
+      "id": "random-geometric-512",
+      "graph": {
+        "generator": "random_geometric",
+        "requested_node_count": 512,
+        "neighbor_candidate_count": 8
+      },
+      "endpoints": {
+        "query_selection_method": "generator_default_endpoints"
+      },
+      "route": {
+        "route_mode": "balanced",
+        "logical_worker_count": 1
+      },
+      "budget": {
+        "total_work": 300000,
+        "timeout_ms": 15000
+      }
+    },
+    {
+      "id": "community-512",
+      "graph": {
+        "generator": "community",
+        "requested_node_count": 512,
+        "community_count": 8
+      },
+      "queries": [
+        {
+          "id": "default",
+          "query_selection_method": "generator_default_endpoints"
+        }
+      ],
+      "route": {
+        "route_mode": "balanced",
+        "logical_worker_count": 1
+      },
+      "budget": {
+        "total_work": 350000,
+        "timeout_ms": 15000
+      }
+    },
+    {
+      "id": "maze-625",
+      "graph": {
+        "generator": "maze",
+        "requested_node_count": 625
+      },
+      "endpoints": {
+        "query_selection_method": "generator_default_endpoints"
+      },
+      "route": {
+        "route_mode": "balanced",
+        "logical_worker_count": 1
+      },
+      "budget": {
+        "total_work": 350000,
+        "timeout_ms": 15000
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"os"
 	"path/filepath"
@@ -94,5 +95,39 @@ func TestRouteDoesNotCreateTraceImplicitly(t *testing.T) {
 	}
 	if len(entries) != 0 {
 		t.Fatalf("unexpected files: %v", entries)
+	}
+}
+
+func TestBenchmarkRunCreatesArchiveInOutputDir(t *testing.T) {
+	dir := t.TempDir()
+	outputDir := filepath.Join(dir, "benchmark-comparison-heavy-v2")
+	path := filepath.Join(dir, "bench.json")
+	data := `{
+  "schema_version":"bridge.benchmark.v2",
+  "suite":{"id":"zip-test"},
+  "execution":{"repetitions":1,"seeds":[1],"jobs":1},
+  "algorithms":["bridge"],
+  "observation_config":{"level":"off"},
+  "output":{"output_dir":"` + filepath.ToSlash(outputDir) + `","artifact_id":"benchmark-comparison-heavy-v2","save_raw_results":true},
+  "scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}]
+}`
+	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
+		t.Fatal(err)
+	}
+	var out, errOut bytes.Buffer
+	if code := run([]string{"benchmark", path}, strings.NewReader(""), &out, &errOut); code != 0 {
+		t.Fatalf("code=%d err=%s out=%s", code, errOut.String(), out.String())
+	}
+	archivePath := filepath.Join(outputDir, "benchmark-comparison-heavy-v2.zip")
+	if _, err := os.Stat(archivePath); err != nil {
+		t.Fatalf("archive missing: %v", err)
+	}
+	archive, err := zip.OpenReader(archivePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer archive.Close()
+	if len(archive.File) == 0 {
+		t.Fatal("archive is empty")
 	}
 }

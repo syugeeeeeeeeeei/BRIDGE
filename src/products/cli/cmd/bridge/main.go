@@ -1,6 +1,7 @@
 package main
 
 import (
+	"archive/zip"
 	"bytes"
 	"context"
 	"encoding/csv"
@@ -289,6 +290,10 @@ func benchmarkRun(args []string, stdout, stderr io.Writer) int {
 		}
 		return exitInternal
 	}
+	if err := writeBenchmarkArchive(s.Output.OutputDir, s.Output.ArtifactID); err != nil {
+		fmt.Fprintln(stderr, "error:", err)
+		return exitIO
+	}
 	if err := writeBenchmark(stdout, "console", result); err != nil {
 		fmt.Fprintln(stderr, "error:", err)
 		return exitUsage
@@ -439,6 +444,66 @@ func writeBenchmark(w io.Writer, format string, r traffic.BenchmarkResult) error
 	default:
 		return fmt.Errorf("unsupported format %q", format)
 	}
+}
+
+func writeBenchmarkArchive(outputDir, artifactID string) error {
+	if outputDir == "" {
+		return nil
+	}
+	archiveBase := artifactID
+	if archiveBase == "" {
+		archiveBase = filepath.Base(filepath.Clean(outputDir))
+	}
+	if archiveBase == "" || archiveBase == "." || archiveBase == string(os.PathSeparator) {
+		return fmt.Errorf("could not determine archive name for output_dir %q", outputDir)
+	}
+	archivePath := filepath.Join(outputDir, archiveBase+".zip")
+	file, err := os.Create(archivePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	writer := zip.NewWriter(file)
+	defer writer.Close()
+
+	return filepath.Walk(outputDir, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if path == outputDir {
+			return nil
+		}
+		if path == archivePath {
+			return nil
+		}
+		rel, err := filepath.Rel(outputDir, path)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		if info.IsDir() {
+			_, err := writer.Create(rel + "/")
+			return err
+		}
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
+		}
+		header.Name = rel
+		header.Method = zip.Deflate
+		entry, err := writer.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+		src, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+		_, err = io.Copy(entry, src)
+		return err
+	})
 }
 func outputWriter(stdout io.Writer, path string, overwrite bool) (io.Writer, func(), error) {
 	if path == "" {
