@@ -14,11 +14,11 @@ func TestRunScenario(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(r.Cases) != 3 || r.Cases[0].Runs != 1 || r.Cases[0].FoundRate != 1 {
+	if len(r.ScenarioSummaries) != 3 || r.ScenarioSummaries[0].Runs != 1 || r.ScenarioSummaries[0].FoundRate != 1 {
 		t.Fatalf("unexpected result: %+v", r)
 	}
 	paths := map[string]string{}
-	for _, c := range r.Cases {
+	for _, c := range r.ScenarioSummaries {
 		paths[c.Algorithm] = c.ExecutionPath
 		if c.AverageEndToEndMS < c.AverageSolverTimeMS {
 			t.Fatalf("timing order must hold: %+v", c)
@@ -45,7 +45,7 @@ func TestRunScenarioRandomGeometric(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(r.Cases) != 2 {
+	if len(r.ScenarioSummaries) != 2 {
 		t.Fatalf("unexpected result: %+v", r)
 	}
 }
@@ -123,4 +123,3 @@ func TestScenarioRejectsUnknownAlgorithm(t *testing.T) {
 		t.Fatal("expected validation error")
 	}
 }
-

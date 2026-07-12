@@ -87,15 +87,6 @@ func TestScenarioValidationRejectsWallWithWidthHeight(t *testing.T) {
 	}
 }
 
-func TestScenarioValidationRejectsNegativeAverageWork(t *testing.T) {
-	s := validScenario()
-	v := -1.0
-	s.Acceptance.AverageWorkMax = &v
-	if err := s.Validate(); err == nil {
-		t.Fatal("expected error")
-	}
-}
-
 func TestScenarioValidationRejectsRawOutputWithoutDir(t *testing.T) {
 	s := validScenario()
 	s.Output.SaveRawResults = true
@@ -104,4 +95,3 @@ func TestScenarioValidationRejectsRawOutputWithoutDir(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
-

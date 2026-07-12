@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestResearchScenarioExpandsQueriesWarmupsAndRawRuns(t *testing.T) {
+func TestResearchScenarioExpandsQueriesWarmupsAndRuns(t *testing.T) {
 	source0, target0 := uint32(0), uint32(8)
 	source1, target1 := uint32(1), uint32(7)
 	s := BenchmarkScenario{
@@ -20,31 +20,31 @@ func TestResearchScenarioExpandsQueriesWarmupsAndRawRuns(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := len(result.RawRuns), 12; got != want {
-		t.Fatalf("raw runs=%d want=%d", got, want)
+	if got, want := len(result.Runs), 12; got != want {
+		t.Fatalf("runs=%d want=%d", got, want)
 	}
 	warmups := 0
 	ids := map[string]bool{}
-	for _, run := range result.RawRuns {
-		if run.Warmup {
+	for _, run := range result.Runs {
+		if run.RunMetadata.WarmupRun {
 			warmups++
 		}
-		if run.RunID == "" || run.GraphInstanceID == "" || run.QueryID == "" {
+		if run.RunMetadata.RunID == "" || run.GraphProfile.GraphInstanceID == "" || run.QueryProfile.QueryID == "" {
 			t.Fatalf("incomplete run identity: %+v", run)
 		}
-		if ids[run.RunID] {
-			t.Fatalf("duplicate run id %q", run.RunID)
+		if ids[run.RunMetadata.RunID] {
+			t.Fatalf("duplicate run id %q", run.RunMetadata.RunID)
 		}
-		ids[run.RunID] = true
+		ids[run.RunMetadata.RunID] = true
 	}
 	if warmups != 4 {
 		t.Fatalf("warmups=%d want=4", warmups)
 	}
-	if len(result.Cases) != 2 || result.Cases[0].Runs != 4 || result.Cases[1].Runs != 4 {
-		t.Fatalf("cases=%+v", result.Cases)
+	if len(result.ScenarioSummaries) != 2 || result.ScenarioSummaries[0].Runs != 4 || result.ScenarioSummaries[1].Runs != 4 {
+		t.Fatalf("summaries=%+v", result.ScenarioSummaries)
 	}
-	if result.Cases[0].WorkStatistics.Count != 4 || result.Cases[1].WorkStatistics.Count != 4 {
-		t.Fatalf("stats=%+v", result.Cases[0].WorkStatistics)
+	if result.ScenarioSummaries[0].WorkStatistics.Count != 4 || result.ScenarioSummaries[1].WorkStatistics.Count != 4 {
+		t.Fatalf("stats=%+v", result.ScenarioSummaries[0].WorkStatistics)
 	}
 }
 
@@ -66,7 +66,7 @@ func TestScenarioRejectsLegacyObservationModes(t *testing.T) {
 			t.Fatalf("mode %q should be rejected", mode)
 		}
 	}
-	for _, mode := range []string{"off", "summary", "trace", "profile"} {
+	for _, mode := range []string{"off", "aggregate", "trace"} {
 		s := validScenario()
 		s.Observation.Mode = mode
 		if err := s.Validate(); err != nil {
@@ -74,4 +74,3 @@ func TestScenarioRejectsLegacyObservationModes(t *testing.T) {
 		}
 	}
 }
-

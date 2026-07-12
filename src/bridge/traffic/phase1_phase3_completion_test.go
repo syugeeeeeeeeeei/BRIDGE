@@ -3,6 +3,8 @@ package traffic
 import (
 	"context"
 	"testing"
+
+	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/gate"
 )
 
 func oneRunScenario(mode string) BenchmarkScenario {
@@ -15,27 +17,28 @@ func oneRunScenario(mode string) BenchmarkScenario {
 }
 
 func TestObservationModesPreserveStableDigestAndSummaryIsCollectedWithoutTrace(t *testing.T) {
-	modes := []string{"off", "summary", "trace", "profile"}
+	modes := []string{"off", "aggregate", "trace"}
 	var expected string
 	for _, mode := range modes {
 		result, err := RunScenario(context.Background(), oneRunScenario(mode))
 		if err != nil {
 			t.Fatalf("%s: %v", mode, err)
 		}
-		if len(result.RawRuns) != 1 {
-			t.Fatalf("%s raw runs=%d", mode, len(result.RawRuns))
+		if len(result.Runs) != 1 {
+			t.Fatalf("%s runs=%d", mode, len(result.Runs))
 		}
-		run := result.RawRuns[0]
+		run := result.Runs[0]
 		if expected == "" {
-			expected = run.StableDigest
+			expected = run.RunMetadata.StableDigest
 		}
-		if run.StableDigest != expected {
-			t.Fatalf("mode %s changed stable digest: %s != %s", mode, run.StableDigest, expected)
+		if run.RunMetadata.StableDigest != expected {
+			t.Fatalf("mode %s changed stable digest: %s != %s", mode, run.RunMetadata.StableDigest, expected)
 		}
-		if mode == "off" && run.Observation != nil {
+		if mode == "off" && run.Observations.ObservationData != nil {
 			t.Fatalf("off must not return observation")
 		}
-		if mode != "off" && (run.Observation == nil || run.Observation.EventCount == 0) {
+		observation, _ := run.Observations.ObservationData.(*gate.ObservationResult)
+		if mode != "off" && (observation == nil || observation.EventCount == 0) {
 			t.Fatalf("%s did not collect observation", mode)
 		}
 	}
@@ -48,18 +51,18 @@ func TestRawRunsRecomputeQuerySummary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Cases) != 1 {
-		t.Fatalf("cases=%d", len(result.Cases))
+	if len(result.ScenarioSummaries) != 1 {
+		t.Fatalf("summaries=%d", len(result.ScenarioSummaries))
 	}
 	values := []float64{}
-	for _, run := range result.RawRuns {
-		if !run.Warmup {
-			values = append(values, float64(run.Work.TotalActions))
+	for _, run := range result.Runs {
+		if !run.RunMetadata.WarmupRun {
+			values = append(values, float64(run.Measurement.Work.TotalActions))
 		}
 	}
 	got := summarizeValues(values)
-	if got != result.Cases[0].WorkStatistics {
-		t.Fatalf("raw recomputation mismatch: got=%+v stored=%+v", got, result.Cases[0].WorkStatistics)
+	if got != result.ScenarioSummaries[0].WorkStatistics {
+		t.Fatalf("raw recomputation mismatch: got=%+v stored=%+v", got, result.ScenarioSummaries[0].WorkStatistics)
 	}
 }
 
@@ -71,13 +74,12 @@ func TestExecutionManifestMatchesRawRunOrder(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.Execution.RunOrder) != len(result.RawRuns) {
-		t.Fatalf("manifest=%d raw=%d", len(result.Execution.RunOrder), len(result.RawRuns))
+	if len(result.Execution.RunOrder) != len(result.Runs) {
+		t.Fatalf("manifest=%d runs=%d", len(result.Execution.RunOrder), len(result.Runs))
 	}
-	for i := range result.RawRuns {
-		if result.RawRuns[i].RunOrdinal != i+1 || result.Execution.RunOrder[i] != result.RawRuns[i].RunID {
+	for i := range result.Runs {
+		if result.Runs[i].RunMetadata.RunOrdinal != i+1 || result.Execution.RunOrder[i] != result.Runs[i].RunMetadata.RunID {
 			t.Fatalf("order mismatch at %d", i)
 		}
 	}
 }
-

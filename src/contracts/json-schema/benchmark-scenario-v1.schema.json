@@ -85,9 +85,8 @@
         "level": {
           "enum": [
             "off",
-            "summary",
-            "trace",
-            "profile"
+            "aggregate",
+            "trace"
           ]
         },
         "sample_rate": {
@@ -123,26 +122,6 @@
           "additionalProperties": {
             "type": "string"
           }
-        }
-      }
-    },
-    "acceptance": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "path_found_rate_min": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "optimality_proven_rate_min": {
-          "type": "number",
-          "minimum": 0,
-          "maximum": 1
-        },
-        "mean_work_actions_max": {
-          "type": "number",
-          "minimum": 0
         }
       }
     },

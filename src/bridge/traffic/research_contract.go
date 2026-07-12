@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/core"
+	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/ultrasound"
 )
+
+const TerminologyVersionV1 = "bridge.terminology.v1"
 
 // EnvironmentMetadata records the execution environment required to interpret a benchmark artifact.
 type EnvironmentMetadata struct {
@@ -19,33 +22,128 @@ type EnvironmentMetadata struct {
 	CapturedAt string `json:"captured_at"`
 }
 
-// GraphMetadata describes the generated graph instance without exposing solver-private state.
-type GraphMetadata struct {
-	Generator string           `json:"generator"`
-	Topology  string           `json:"topology,omitempty"`
-	Seed      int64            `json:"seed"`
-	Nodes     int              `json:"actual_node_count"`
-	Edges     int              `json:"edge_count"`
-	Directed  bool             `json:"directed"`
-	Dataset   *DatasetMetadata `json:"dataset,omitempty"`
+type BenchmarkRunMetadata struct {
+	RunOrdinal          int     `json:"run_ordinal"`
+	RunID               string  `json:"run_id"`
+	RunName             string  `json:"run_name"`
+	ScenarioID          string  `json:"scenario_id"`
+	GraphInstanceID     string  `json:"graph_instance_id"`
+	QueryID             string  `json:"query_id"`
+	AlgorithmID         string  `json:"algorithm_id"`
+	ExecutionSeed       int64   `json:"execution_seed"`
+	RepetitionIndex     int     `json:"repetition_index"`
+	WarmupRun           bool    `json:"warmup_run"`
+	ExecutionStartedAt  string  `json:"execution_started_at,omitempty"`
+	ExecutionSucceeded  bool    `json:"execution_succeeded"`
+	StableDigest        string  `json:"stable_digest,omitempty"`
+	ObservationOverhead float64 `json:"observation_overhead_ratio,omitempty"`
 }
 
-// QueryMetadata identifies one source-target query within a graph instance.
-type QueryMetadata struct {
-	Strategy string      `json:"query_selection_method"`
-	Source   core.NodeID `json:"source"`
-	Target   core.NodeID `json:"target"`
+type ScenarioDefinition struct {
+	ScenarioID             string            `json:"scenario_id"`
+	GraphGenerator         string            `json:"graph_generator"`
+	GraphGeneratorSettings GeneratorSpec     `json:"graph_generator_settings"`
+	RouteConfiguration     RouteSpec         `json:"route_configuration"`
+	BudgetConfiguration    BudgetSpec        `json:"budget_configuration,omitempty"`
+	AblationConfiguration  AblationSpec      `json:"ablation_configuration,omitempty"`
+	QuerySelectionMethod   string            `json:"query_selection_method"`
+	ObservationMode        string            `json:"observation_mode"`
+	ObservationSampleRate  float64           `json:"observation_sample_rate,omitempty"`
+	OutputMetadata         map[string]string `json:"output_metadata,omitempty"`
 }
 
-// QualityMetadata records result-quality facts that are independent of timing aggregation.
-type QualityMetadata struct {
-	Found            bool     `json:"path_found"`
-	SearchCompleted  bool     `json:"search_completed"`
-	Reachability     bool     `json:"reachability_proven"`
-	Exact            bool     `json:"optimality_proven"`
-	LowerBound       *float64 `json:"lower_bound,omitempty"`
-	CertifiedRatio   *float64 `json:"proven_cost_ratio,omitempty"`
-	QualityCertified bool     `json:"quality_bound_proven"`
+// GraphProfile describes the generated graph instance without exposing solver-private state.
+type GraphProfile struct {
+	GraphInstanceID  string           `json:"graph_instance_id"`
+	Generator        string           `json:"graph_generator"`
+	Topology         string           `json:"graph_topology,omitempty"`
+	GraphSeed        int64            `json:"graph_seed"`
+	ActualNodeCount  int              `json:"actual_node_count"`
+	EdgeCount        int              `json:"edge_count"`
+	Directed         bool             `json:"directed"`
+	AverageOutDegree float64          `json:"average_out_degree,omitempty"`
+	EdgeDensity      float64          `json:"edge_density,omitempty"`
+	Dataset          *DatasetMetadata `json:"dataset,omitempty"`
+}
+
+// QueryProfile identifies one source-target query within a graph instance.
+type QueryProfile struct {
+	QueryID              string      `json:"query_id"`
+	QuerySeed            int64       `json:"query_seed"`
+	QueryHash            string      `json:"query_hash"`
+	QuerySelectionMethod string      `json:"query_selection_method"`
+	Source               core.NodeID `json:"source"`
+	Target               core.NodeID `json:"target"`
+}
+
+type AlgorithmConfiguration struct {
+	AlgorithmID           string       `json:"algorithm_id"`
+	ExecutionPath         string       `json:"execution_path"`
+	TargetKind            string       `json:"target_kind"`
+	RouteConfiguration    RouteSpec    `json:"route_configuration"`
+	BudgetConfiguration   BudgetSpec   `json:"budget_configuration,omitempty"`
+	AblationConfiguration AblationSpec `json:"ablation_configuration,omitempty"`
+}
+
+// ExecutionResult records result facts and algorithm claims without acceptance judgment.
+type ExecutionResult struct {
+	Path                []core.NodeID      `json:"returned_path,omitempty"`
+	PathFound           bool               `json:"path_found"`
+	SearchCompleted     bool               `json:"search_completed"`
+	ReachabilityProven  bool               `json:"reachability_proven"`
+	OptimalityProven    bool               `json:"optimality_proven"`
+	PathCost            *float64           `json:"path_cost,omitempty"`
+	ErrorCode           core.ErrorCode     `json:"error_code,omitempty"`
+	FailureReason       string             `json:"failure_reason,omitempty"`
+	TerminationReason   string             `json:"termination_reason,omitempty"`
+	TimeToFirstPathMS   *float64           `json:"first_path_elapsed_ms,omitempty"`
+	TimeToBestFoundMS   *float64           `json:"best_path_elapsed_ms,omitempty"`
+	ImprovementCount    uint64             `json:"improvement_count"`
+	BridgeOverheadRatio float64            `json:"bridge_overhead_ratio,omitempty"`
+	DuplicatedWorkRatio float64            `json:"duplicated_work_ratio,omitempty"`
+	StateReuseRatio     float64            `json:"state_reuse_ratio,omitempty"`
+	BudgetLedger        *core.BudgetLedger `json:"budget_ledger,omitempty"`
+	QualityClaims       QualityClaims      `json:"quality_claims"`
+}
+
+type QualityClaims struct {
+	LowerBound         *float64 `json:"lower_bound,omitempty"`
+	ProvenCostRatio    *float64 `json:"proven_cost_ratio,omitempty"`
+	QualityBoundProven bool     `json:"quality_bound_proven"`
+}
+
+type Measurement struct {
+	Work           core.WorkMetrics   `json:"work"`
+	TimeBreakdown  core.TimeBreakdown `json:"time_breakdown"`
+	SystemMetrics  core.SystemMetrics `json:"system_metrics"`
+	SolverTimeMS   float64            `json:"solver_time_ms"`
+	EndToEndTimeMS float64            `json:"end_to_end_time_ms"`
+	ZeroDuration   bool               `json:"zero_duration"`
+}
+
+type Observations struct {
+	ObservationData  any                          `json:"observation_data,omitempty"`
+	QualityHistory   []ultrasound.QualityPoint    `json:"quality_history,omitempty"`
+	BudgetHistory    []ultrasound.BudgetPoint     `json:"budget_history,omitempty"`
+	CollectorMetrics *ultrasound.CollectorMetrics `json:"collector_metrics,omitempty"`
+}
+
+type References struct {
+	GraphSpecification GeneratorSpec `json:"graph_specification"`
+	TraceManifestPath  string        `json:"trace_manifest_path,omitempty"`
+	TracePath          string        `json:"trace_path,omitempty"`
+}
+
+type BenchmarkRun struct {
+	RunMetadata            BenchmarkRunMetadata   `json:"run_metadata"`
+	ScenarioDefinition     ScenarioDefinition     `json:"scenario_definition"`
+	GraphProfile           GraphProfile           `json:"graph_profile"`
+	QueryProfile           QueryProfile           `json:"query_profile"`
+	AlgorithmConfiguration AlgorithmConfiguration `json:"algorithm_configuration"`
+	ExecutionResult        ExecutionResult        `json:"execution_result"`
+	Measurement            Measurement            `json:"measurement"`
+	Observations           Observations           `json:"observations"`
+	References             References             `json:"references"`
 }
 
 // SummaryStatistics is recomputable from raw scalar observations.

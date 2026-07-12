@@ -22,24 +22,20 @@
     "reachability"
   ],
   "observation_config": {
-    "level": "off",
+    "level": "trace",
     "sample_rate": 1.0
   },
   "output": {
     "output_dir": "./others/results/benchmark-comparison-heavy-v2",
     "artifact_id": "benchmark-comparison-heavy-v2",
     "save_raw_results": true,
-    "save_trace": false,
+    "save_trace": true,
     "capture_environment": true,
     "metadata": {
       "purpose": "local-heavy-comparison",
       "timing_policy": "single-job-observation-off",
       "comparison_focus": "algorithm-behavior-across-graph-families"
     }
-  },
-  "acceptance": {
-    "path_found_rate_min": 0.95,
-    "mean_work_actions_max": 500000
   },
   "scenarios": [
     {

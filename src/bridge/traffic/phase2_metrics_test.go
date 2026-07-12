@@ -12,18 +12,20 @@ func TestRawRunContainsPhaseAndSystemMetrics(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got.RawRuns) != 1 {
-		t.Fatalf("raw runs=%d", len(got.RawRuns))
+	if len(got.Runs) != 1 {
+		t.Fatalf("runs=%d", len(got.Runs))
 	}
-	r := got.RawRuns[0]
-	if (r.TimeBreakdown.TotalMS <= 0 && r.EndToEndTimeMS <= 0 && r.TimeBreakdown.GateMS <= 0) || r.TimeBreakdown.SolverMS < 0 {
-		t.Fatalf("invalid timing: %+v", r.TimeBreakdown)
+	r := got.Runs[0]
+	if r.Measurement.TimeBreakdown.SolverMS < 0 || r.Measurement.EndToEndTimeMS < 0 || r.Measurement.TimeBreakdown.GateMS < 0 {
+		t.Fatalf("invalid timing: %+v", r.Measurement.TimeBreakdown)
 	}
-	if r.SystemMetrics.MallocCount == 0 {
-		t.Fatalf("expected runtime allocation metrics: %+v", r.SystemMetrics)
+	if r.Measurement.ZeroDuration && (r.Measurement.EndToEndTimeMS != 0 || r.Measurement.SolverTimeMS != 0) {
+		t.Fatalf("zero_duration flag mismatch: %+v", r.Measurement)
 	}
-	if r.SystemMetrics.HeapAllocBoundaryMax < r.SystemMetrics.HeapAllocBefore || r.SystemMetrics.HeapAllocBoundaryMax < r.SystemMetrics.HeapAllocAfter {
-		t.Fatalf("invalid peak: %+v", r.SystemMetrics)
+	if r.Measurement.SystemMetrics.MallocCount == 0 {
+		t.Fatalf("expected runtime allocation metrics: %+v", r.Measurement.SystemMetrics)
+	}
+	if r.Measurement.SystemMetrics.HeapAllocBoundaryMax < r.Measurement.SystemMetrics.HeapAllocBefore || r.Measurement.SystemMetrics.HeapAllocBoundaryMax < r.Measurement.SystemMetrics.HeapAllocAfter {
+		t.Fatalf("invalid peak: %+v", r.Measurement.SystemMetrics)
 	}
 }
-

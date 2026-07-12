@@ -143,10 +143,8 @@
         "level": {
           "enum": [
             "off",
-            "summary",
-            "summary",
-            "trace",
-            "profile"
+            "aggregate",
+            "trace"
           ]
         }
       }

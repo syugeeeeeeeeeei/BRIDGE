@@ -34,8 +34,7 @@
     },
     "ultrasound_mode": {
       "enum": [
-        "trace",
-        "profile"
+        "trace"
       ]
     },
     "sample_rate": {

@@ -21,7 +21,7 @@ import (
 )
 
 const BenchmarkSchemaV1 = "bridge.benchmark.v2"
-const BenchmarkResultSchemaV1 = "bridge.benchmark.result.v2"
+const BenchmarkResultSchemaV1 = "bridge.benchmark.artifact.v2"
 
 type BenchmarkScenario struct {
 	SchemaVersion string          `json:"schema_version" yaml:"schema_version"`
@@ -31,7 +31,6 @@ type BenchmarkScenario struct {
 	Observation   ObservationSpec `json:"observation_config,omitempty" yaml:"observation_config,omitempty"`
 	Output        OutputSpec      `json:"output,omitempty" yaml:"output,omitempty"`
 	Scenarios     []ScenarioCase  `json:"scenarios" yaml:"scenarios"`
-	Acceptance    AcceptanceSpec  `json:"acceptance,omitempty" yaml:"acceptance,omitempty"`
 }
 
 type SuiteSpec struct {
@@ -101,25 +100,28 @@ type BudgetSpec struct {
 	TotalWork *uint64  `json:"total_work,omitempty" yaml:"total_work,omitempty"`
 	TimeoutMS *float64 `json:"timeout_ms,omitempty" yaml:"timeout_ms,omitempty"`
 }
-type AcceptanceSpec struct {
-	FoundRateMin   *float64 `json:"path_found_rate_min,omitempty" yaml:"path_found_rate_min,omitempty"`
-	ExactRateMin   *float64 `json:"optimality_proven_rate_min,omitempty" yaml:"optimality_proven_rate_min,omitempty"`
-	AverageWorkMax *float64 `json:"mean_work_actions_max,omitempty" yaml:"mean_work_actions_max,omitempty"`
+type BenchmarkResult struct {
+	SchemaVersion      string               `json:"schema_version"`
+	TerminologyVersion string               `json:"terminology_version"`
+	SuiteID            string               `json:"suite_id"`
+	ArtifactID         string               `json:"artifact_id,omitempty"`
+	RunMetadata        ArtifactRunMetadata  `json:"run_metadata"`
+	Execution          ExecutionManifest    `json:"execution"`
+	Environment        *EnvironmentMetadata `json:"environment,omitempty"`
+	Runs               []BenchmarkRun       `json:"runs"`
+	ScenarioSummaries  []ScenarioSummary    `json:"scenario_summaries"`
+	Failures           []string             `json:"failures,omitempty"`
 }
 
-type BenchmarkResult struct {
-	SchemaVersion  string               `json:"schema_version"`
-	SuiteID        string               `json:"suite_id"`
-	ArtifactID     string               `json:"artifact_id,omitempty"`
-	StartedAt      string               `json:"started_at"`
-	DurationMS     float64              `json:"duration_ms"`
-	Passed         bool                 `json:"passed"`
-	Environment    *EnvironmentMetadata `json:"environment,omitempty"`
-	OutputMetadata map[string]string    `json:"output_metadata,omitempty"`
-	Execution      ExecutionManifest    `json:"execution"`
-	RawRuns        []RawRunResult       `json:"raw_runs"`
-	Cases          []CaseResult         `json:"cases"`
-	Failures       []string             `json:"failures,omitempty"`
+type ArtifactRunMetadata struct {
+	ScenarioSchemaVersion string            `json:"scenario_schema_version"`
+	StartedAt             string            `json:"started_at"`
+	CompletedAt           string            `json:"completed_at,omitempty"`
+	DurationMS            float64           `json:"duration_ms"`
+	ExecutionSucceeded    bool              `json:"execution_succeeded"`
+	ObservationMode       string            `json:"observation_mode"`
+	ObservationSampleRate float64           `json:"observation_sample_rate,omitempty"`
+	OutputMetadata        map[string]string `json:"output_metadata,omitempty"`
 }
 type ExecutionManifest struct {
 	Randomized       bool     `json:"randomized"`
@@ -128,7 +130,7 @@ type ExecutionManifest struct {
 	RunOrder         []string `json:"run_order"`
 }
 
-type CaseResult struct {
+type ScenarioSummary struct {
 	ScenarioID           string                       `json:"scenario_id"`
 	Algorithm            string                       `json:"algorithm"`
 	QueryID              string                       `json:"query_id"`
@@ -220,9 +222,9 @@ func (s BenchmarkScenario) Validate() error {
 		}
 	}
 	switch s.Observation.Mode {
-	case "off", "summary", "trace", "profile":
+	case "off", "aggregate", "trace":
 	default:
-		return fmt.Errorf("observation_config.level must be one of off, summary, trace, profile")
+		return fmt.Errorf("observation_config.level must be one of off, aggregate, trace")
 	}
 	if s.Observation.SampleRate <= 0 || s.Observation.SampleRate > 1 {
 		return errors.New("observation.sample_rate must be > 0 and <= 1")
@@ -323,14 +325,6 @@ func (s BenchmarkScenario) Validate() error {
 		}
 		if c.Graph.Noise < 0 {
 			return fmt.Errorf("scenario %q: graph.edge_weight_noise must be >= 0", c.ID)
-		}
-	}
-	if s.Acceptance.AverageWorkMax != nil && *s.Acceptance.AverageWorkMax < 0 {
-		return errors.New("acceptance.mean_work_actions_max must be >= 0")
-	}
-	for name, v := range map[string]*float64{"path_found_rate_min": s.Acceptance.FoundRateMin, "optimality_proven_rate_min": s.Acceptance.ExactRateMin} {
-		if v != nil && (*v < 0 || *v > 1) {
-			return fmt.Errorf("acceptance.%s must be between 0 and 1", name)
 		}
 	}
 	return nil
@@ -466,50 +460,6 @@ type RunScenarioOptions struct {
 	ProgressReporter ProgressReporter
 }
 
-type RawRunResult struct {
-	RunOrdinal               int                       `json:"run_ordinal"`
-	RunID                    string                    `json:"run_id"`
-	RunName                  string                    `json:"run_name"`
-	ScenarioID               string                    `json:"scenario_id"`
-	Algorithm                string                    `json:"algorithm"`
-	GraphInstanceID          string                    `json:"graph_instance_id"`
-	QueryID                  string                    `json:"query_id"`
-	TargetKind               string                    `json:"target_kind"`
-	ExecutionPath            string                    `json:"execution_path"`
-	Seed                     int64                     `json:"seed"`
-	Repetition               int                       `json:"repetition"`
-	Warmup                   bool                      `json:"warmup"`
-	Path                     []core.NodeID             `json:"path,omitempty"`
-	Found                    bool                      `json:"path_found"`
-	Exact                    bool                      `json:"optimality_proven"`
-	Distance                 *float64                  `json:"path_cost,omitempty"`
-	Work                     core.WorkMetrics          `json:"work"`
-	TimeBreakdown            core.TimeBreakdown        `json:"time_breakdown"`
-	SystemMetrics            core.SystemMetrics        `json:"system_metrics"`
-	SolverTimeMS             float64                   `json:"solver_time_ms"`
-	EndToEndTimeMS           float64                   `json:"end_to_end_time_ms"`
-	ErrorCode                core.ErrorCode            `json:"error_code,omitempty"`
-	StableDigest             string                    `json:"stable_digest,omitempty"`
-	GraphSpec                GeneratorSpec             `json:"graph_spec"`
-	Graph                    GraphMetadata             `json:"graph"`
-	Query                    QueryMetadata             `json:"query"`
-	Quality                  QualityMetadata           `json:"quality"`
-	Observation              *gate.ObservationResult   `json:"observation_data,omitempty"`
-	ObservationOverheadRatio float64                   `json:"observation_overhead_ratio,omitempty"`
-	FailureReason            string                    `json:"failure_reason,omitempty"`
-	TimeToFirstPathMS        *float64                  `json:"first_path_elapsed_ms,omitempty"`
-	TimeToBestFoundMS        *float64                  `json:"best_path_elapsed_ms,omitempty"`
-	ImprovementCount         uint64                    `json:"improvement_count"`
-	BridgeOverheadRatio      float64                   `json:"bridge_overhead_ratio,omitempty"`
-	DuplicatedWorkRatio      float64                   `json:"duplicated_work_ratio,omitempty"`
-	StateReuseRatio          float64                   `json:"state_reuse_ratio,omitempty"`
-	Ablation                 AblationSpec              `json:"ablation,omitempty"`
-	QualityHistory           []ultrasound.QualityPoint `json:"quality_history,omitempty"`
-	BudgetHistory            []ultrasound.BudgetPoint  `json:"budget_history,omitempty"`
-	BudgetLedger             *core.BudgetLedger        `json:"budget_ledger,omitempty"`
-	TraceManifestPath        string                    `json:"trace_manifest_path,omitempty"`
-	TracePath                string                    `json:"trace_path,omitempty"`
-}
 type RunProgress struct {
 	RunName      string
 	Current      int
@@ -561,7 +511,20 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		return BenchmarkResult{}, err
 	}
 	started := time.Now()
-	out := BenchmarkResult{SchemaVersion: BenchmarkResultSchemaV1, SuiteID: s.Suite.ID, ArtifactID: s.Output.ArtifactID, StartedAt: started.UTC().Format(time.RFC3339Nano), Passed: true, OutputMetadata: s.Output.Metadata}
+	out := BenchmarkResult{
+		SchemaVersion:      BenchmarkResultSchemaV1,
+		TerminologyVersion: TerminologyVersionV1,
+		SuiteID:            s.Suite.ID,
+		ArtifactID:         s.Output.ArtifactID,
+		RunMetadata: ArtifactRunMetadata{
+			ScenarioSchemaVersion: s.SchemaVersion,
+			StartedAt:             started.UTC().Format(time.RFC3339Nano),
+			ExecutionSucceeded:    true,
+			ObservationMode:       s.Observation.Mode,
+			ObservationSampleRate: s.Observation.SampleRate,
+			OutputMetadata:        s.Output.Metadata,
+		},
+	}
 	out.Execution = ExecutionManifest{Randomized: s.Execution.RandomizeOrder, RunOrder: []string{}}
 	if s.Execution.RandomizeOrder {
 		out.Execution.ShuffleSeed = s.Execution.Seeds[0]
@@ -577,7 +540,7 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		timeout, _ = time.ParseDuration(s.Execution.Timeout)
 	}
 	type accumulator struct {
-		result                                  CaseResult
+		result                                  ScenarioSummary
 		found, exact                            int
 		distances, works, solverTimes, endTimes []float64
 		metrics                                 map[string][]float64
@@ -628,7 +591,7 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		var tracePath string
 		if s.Observation.Mode != "off" {
 			var sink ultrasound.EventSink = ultrasound.DiscardSink{}
-			if traceBaseDir != "" && (s.Observation.Mode == "trace" || s.Observation.Mode == "profile") {
+			if traceBaseDir != "" && s.Observation.Mode == "trace" {
 				tracePath = filepath.Join(traceBaseDir, "trace.jsonl")
 				fs, sinkErr := ultrasound.NewFileSink(tracePath, opts.Overwrite)
 				if sinkErr != nil {
@@ -650,7 +613,7 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		var executeResult gate.ExecuteResult
 		var memBefore, memAfter runtime.MemStats
 		runtime.ReadMemStats(&memBefore)
-		stopHeapSampling := startHeapSampler(s.Observation.Mode == "profile", memBefore.HeapAlloc)
+		stopHeapSampling := startHeapSampler(false, memBefore.HeapAlloc)
 		if algorithm == "bridge" {
 			routeResult, err = router.Route(runCtx, req, gate.RouteOptions{Observation: obs})
 		} else {
@@ -671,13 +634,69 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s observation failed: %v", c.ID, query.ID, observationErr))
 		}
 		out.Execution.RunOrder = append(out.Execution.RunOrder, runID)
-		graphMeta := GraphMetadata{Generator: c.Graph.Generator, Topology: c.Graph.Topology, Seed: graphSeed, Nodes: g.NodeCount(), Edges: g.EdgeCount(), Directed: g.Directed()}
+		graphMeta := GraphProfile{
+			GraphInstanceID:  graphInstanceID,
+			Generator:        c.Graph.Generator,
+			Topology:         c.Graph.Topology,
+			GraphSeed:        graphSeed,
+			ActualNodeCount:  g.NodeCount(),
+			EdgeCount:        g.EdgeCount(),
+			Directed:         g.Directed(),
+			AverageOutDegree: averageOutDegree(g),
+			EdgeDensity:      edgeDensity(g),
+		}
 		if c.Graph.Generator == "dataset" {
 			if loaded, loadErr := LoadDataset(c.Graph.DatasetPath); loadErr == nil {
 				graphMeta.Dataset = &loaded.Metadata
 			}
 		}
-		raw := RawRunResult{RunOrdinal: completedRuns + 1, RunID: runID, RunName: runName, ScenarioID: c.ID, Algorithm: algorithm, GraphInstanceID: graphInstanceID, QueryID: query.ID, Seed: seed, Repetition: rep, Warmup: plan.Warmup, GraphSpec: c.Graph, Graph: graphMeta, Query: QueryMetadata{Strategy: query.Strategy, Source: core.NodeID(source), Target: core.NodeID(target)}}
+		runStartedAt := runStarted.UTC().Format(time.RFC3339Nano)
+		raw := BenchmarkRun{
+			RunMetadata: BenchmarkRunMetadata{
+				RunOrdinal:         completedRuns + 1,
+				RunID:              runID,
+				RunName:            runName,
+				ScenarioID:         c.ID,
+				GraphInstanceID:    graphInstanceID,
+				QueryID:            query.ID,
+				AlgorithmID:        algorithm,
+				ExecutionSeed:      seed,
+				RepetitionIndex:    rep,
+				WarmupRun:          plan.Warmup,
+				ExecutionStartedAt: runStartedAt,
+				ExecutionSucceeded: true,
+			},
+			ScenarioDefinition: ScenarioDefinition{
+				ScenarioID:             c.ID,
+				GraphGenerator:         c.Graph.Generator,
+				GraphGeneratorSettings: c.Graph,
+				RouteConfiguration:     c.Route,
+				BudgetConfiguration:    c.Budget,
+				AblationConfiguration:  c.Ablation,
+				QuerySelectionMethod:   query.Strategy,
+				ObservationMode:        s.Observation.Mode,
+				ObservationSampleRate:  s.Observation.SampleRate,
+				OutputMetadata:         s.Output.Metadata,
+			},
+			GraphProfile: graphMeta,
+			QueryProfile: QueryProfile{
+				QueryID:              query.ID,
+				QuerySeed:            seed,
+				QueryHash:            queryStableHash(query.ID, query.Strategy, source, target, seed),
+				QuerySelectionMethod: query.Strategy,
+				Source:               core.NodeID(source),
+				Target:               core.NodeID(target),
+			},
+			AlgorithmConfiguration: AlgorithmConfiguration{
+				AlgorithmID:           algorithm,
+				RouteConfiguration:    c.Route,
+				BudgetConfiguration:   c.Budget,
+				AblationConfiguration: c.Ablation,
+			},
+			References: References{
+				GraphSpecification: c.Graph,
+			},
+		}
 		var found, exact bool
 		var distance *float64
 		var work core.WorkMetrics
@@ -693,16 +712,16 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			timeBreakdown = routeResult.TimeBreakdown
 			endMS = routeResult.TimeMS
 			errorCode = routeResult.ErrorCode
-			raw.FailureReason = routeResult.FailureReason
-			raw.TimeToFirstPathMS = routeResult.TimeToFirstPathMS
-			raw.TimeToBestFoundMS = routeResult.TimeToBestFoundMS
-			raw.ImprovementCount = routeResult.ImprovementCount
-			raw.BridgeOverheadRatio = routeResult.BridgeOverheadRatio
-			raw.DuplicatedWorkRatio = routeResult.DuplicatedWorkRatio
-			raw.StateReuseRatio = routeResult.StateReuseRatio
-			raw.BudgetLedger = routeResult.BudgetLedger
-			raw.TargetKind = "system"
-			raw.ExecutionPath = "route"
+			raw.ExecutionResult.FailureReason = routeResult.FailureReason
+			raw.ExecutionResult.TimeToFirstPathMS = routeResult.TimeToFirstPathMS
+			raw.ExecutionResult.TimeToBestFoundMS = routeResult.TimeToBestFoundMS
+			raw.ExecutionResult.ImprovementCount = routeResult.ImprovementCount
+			raw.ExecutionResult.BridgeOverheadRatio = routeResult.BridgeOverheadRatio
+			raw.ExecutionResult.DuplicatedWorkRatio = routeResult.DuplicatedWorkRatio
+			raw.ExecutionResult.StateReuseRatio = routeResult.StateReuseRatio
+			raw.ExecutionResult.BudgetLedger = routeResult.BudgetLedger
+			raw.AlgorithmConfiguration.TargetKind = "system"
+			raw.AlgorithmConfiguration.ExecutionPath = "route"
 		} else {
 			found = executeResult.Found
 			exact = executeResult.Exact
@@ -712,70 +731,76 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			timeBreakdown = executeResult.TimeBreakdown
 			endMS = executeResult.EndToEndMS
 			errorCode = executeResult.ErrorCode
-			raw.BudgetLedger = executeResult.BudgetLedger
-			raw.TargetKind = executeResult.TargetKind
-			raw.ExecutionPath = executeResult.ExecutionPath
+			raw.ExecutionResult.BudgetLedger = executeResult.BudgetLedger
+			raw.AlgorithmConfiguration.TargetKind = executeResult.TargetKind
+			raw.AlgorithmConfiguration.ExecutionPath = executeResult.ExecutionPath
 		}
 		if algorithm == "bridge" {
-			raw.Path = make([]core.NodeID, len(routeResult.Path))
+			raw.ExecutionResult.Path = make([]core.NodeID, len(routeResult.Path))
 			for i, n := range routeResult.Path {
-				raw.Path[i] = core.NodeID(n)
+				raw.ExecutionResult.Path[i] = core.NodeID(n)
 			}
 		} else {
-			raw.Path = make([]core.NodeID, len(executeResult.Path))
+			raw.ExecutionResult.Path = make([]core.NodeID, len(executeResult.Path))
 			for i, n := range executeResult.Path {
-				raw.Path[i] = core.NodeID(n)
+				raw.ExecutionResult.Path[i] = core.NodeID(n)
 			}
 		}
-		raw.Found = found
-		raw.Exact = exact
-		raw.Work = work
-		raw.TimeBreakdown = timeBreakdown
-		raw.SystemMetrics = core.SystemMetrics{
+		raw.ExecutionResult.PathFound = found
+		raw.ExecutionResult.SearchCompleted = found || errorCode == ""
+		raw.ExecutionResult.ReachabilityProven = found || errorCode == core.ErrNoPath
+		raw.ExecutionResult.OptimalityProven = exact
+		raw.Measurement.Work = work
+		raw.Measurement.TimeBreakdown = timeBreakdown
+		raw.Measurement.SystemMetrics = core.SystemMetrics{
 			AllocBytes:      memAfter.TotalAlloc - memBefore.TotalAlloc,
 			MallocCount:     memAfter.Mallocs - memBefore.Mallocs,
 			GCCount:         memAfter.NumGC - memBefore.NumGC,
 			HeapAllocBefore: memBefore.HeapAlloc, HeapAllocAfter: memAfter.HeapAlloc,
 			HeapAllocBoundaryMax: maxUint64(memBefore.HeapAlloc, memAfter.HeapAlloc), HeapAllocSampledPeak: sampledPeak,
 		}
-		raw.SolverTimeMS = solverMS
-		raw.EndToEndTimeMS = endMS
-		raw.ErrorCode = errorCode
-		if raw.FailureReason == "" && !found {
-			raw.FailureReason = classifyFailure(errorCode, raw.SystemMetrics, false)
+		raw.Measurement.SolverTimeMS = solverMS
+		raw.Measurement.EndToEndTimeMS = endMS
+		raw.Measurement.ZeroDuration = endMS == 0 || solverMS == 0
+		raw.ExecutionResult.ErrorCode = errorCode
+		if raw.ExecutionResult.FailureReason == "" && !found {
+			raw.ExecutionResult.FailureReason = classifyFailure(errorCode, raw.Measurement.SystemMetrics, false)
 		}
-		raw.Quality = QualityMetadata{Found: found, Exact: exact}
-		raw.Ablation = c.Ablation
-		if algorithm == "bridge" {
-			raw.Observation = routeResult.Observation
-		} else {
-			raw.Observation = executeResult.Observation
+		raw.ExecutionResult.TerminationReason = terminationReason(found, errorCode)
+		raw.ExecutionResult.QualityClaims = QualityClaims{}
+		if s.Observation.Mode != "off" {
+			if algorithm == "bridge" {
+				raw.Observations.ObservationData = routeResult.Observation
+			} else {
+				raw.Observations.ObservationData = executeResult.Observation
+			}
 		}
 		if collector != nil {
 			m := collector.Metrics()
-			raw.QualityHistory = append([]ultrasound.QualityPoint(nil), m.QualityHistory...)
-			raw.BudgetHistory = append([]ultrasound.BudgetPoint(nil), m.BudgetHistory...)
+			raw.Observations.QualityHistory = append([]ultrasound.QualityPoint(nil), m.QualityHistory...)
+			raw.Observations.BudgetHistory = append([]ultrasound.BudgetPoint(nil), m.BudgetHistory...)
+			raw.Observations.CollectorMetrics = &m
 		}
 		if distance != nil {
 			d := *distance
-			raw.Distance = &d
+			raw.ExecutionResult.PathCost = &d
 		}
-		raw.StableDigest = rawRunStableDigest(raw)
+		raw.RunMetadata.StableDigest = rawRunStableDigest(raw)
 		if tracePath != "" && collector != nil {
-			raw.TracePath = tracePath
-			raw.TraceManifestPath = filepath.Join(traceBaseDir, "manifest.json")
-			if absolute, absErr := filepath.Abs(raw.TracePath); absErr == nil {
-				raw.TracePath = absolute
+			raw.References.TracePath = tracePath
+			raw.References.TraceManifestPath = filepath.Join(traceBaseDir, "manifest.json")
+			if absolute, absErr := filepath.Abs(raw.References.TracePath); absErr == nil {
+				raw.References.TracePath = absolute
 			}
-			if absolute, absErr := filepath.Abs(raw.TraceManifestPath); absErr == nil {
-				raw.TraceManifestPath = absolute
+			if absolute, absErr := filepath.Abs(raw.References.TraceManifestPath); absErr == nil {
+				raw.References.TraceManifestPath = absolute
 			}
 			if err := writeTraceManifest(traceBaseDir, raw, s.Observation.SampleRate, collector.Metrics(), tracePath); err != nil {
 				stopProgress(false, completedRuns)
 				return out, err
 			}
 		}
-		out.RawRuns = append(out.RawRuns, raw)
+		out.Runs = append(out.Runs, raw)
 		if s.Output.OutputDir != "" && s.Output.SaveRawResults {
 			runDir := filepath.Join(s.Output.OutputDir, c.ID, runDirName)
 			if err := writeJSONFile(filepath.Join(runDir, "raw-result.json"), raw, opts.Overwrite); err != nil {
@@ -791,7 +816,7 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		key := c.ID + "\x00" + algorithm + "\x00" + query.ID
 		acc := groups[key]
 		if acc == nil {
-			acc = &accumulator{result: CaseResult{ScenarioID: c.ID, Algorithm: algorithm, QueryID: query.ID, TargetKind: raw.TargetKind, ExecutionPath: raw.ExecutionPath, MetricStatistics: map[string]SummaryStatistics{}, FailureReasons: map[string]int{}, Ablation: c.Ablation}, metrics: map[string][]float64{}, failureReasons: map[string]int{}}
+			acc = &accumulator{result: ScenarioSummary{ScenarioID: c.ID, Algorithm: algorithm, QueryID: query.ID, TargetKind: raw.AlgorithmConfiguration.TargetKind, ExecutionPath: raw.AlgorithmConfiguration.ExecutionPath, MetricStatistics: map[string]SummaryStatistics{}, FailureReasons: map[string]int{}, Ablation: c.Ablation}, metrics: map[string][]float64{}, failureReasons: map[string]int{}}
 			groups[key] = acc
 		}
 		acc.result.Runs++
@@ -814,17 +839,17 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		acc.metrics["anchor_ms"] = append(acc.metrics["anchor_ms"], timeBreakdown.AnchorMS)
 		acc.metrics["bolts_ms"] = append(acc.metrics["bolts_ms"], timeBreakdown.BoltsMS)
 		acc.metrics["fallback_ms"] = append(acc.metrics["fallback_ms"], timeBreakdown.FallbackMS)
-		acc.metrics["alloc_bytes"] = append(acc.metrics["alloc_bytes"], float64(raw.SystemMetrics.AllocBytes))
-		acc.metrics["malloc_count"] = append(acc.metrics["malloc_count"], float64(raw.SystemMetrics.MallocCount))
-		acc.metrics["gc_count"] = append(acc.metrics["gc_count"], float64(raw.SystemMetrics.GCCount))
-		acc.metrics["first_path_elapsed_ms"] = appendOptional(acc.metrics["first_path_elapsed_ms"], raw.TimeToFirstPathMS)
-		acc.metrics["best_path_elapsed_ms"] = appendOptional(acc.metrics["best_path_elapsed_ms"], raw.TimeToBestFoundMS)
-		acc.metrics["improvement_count"] = append(acc.metrics["improvement_count"], float64(raw.ImprovementCount))
-		acc.metrics["bridge_overhead_ratio"] = append(acc.metrics["bridge_overhead_ratio"], raw.BridgeOverheadRatio)
-		acc.metrics["duplicated_work_ratio"] = append(acc.metrics["duplicated_work_ratio"], raw.DuplicatedWorkRatio)
-		acc.metrics["state_reuse_ratio"] = append(acc.metrics["state_reuse_ratio"], raw.StateReuseRatio)
-		if raw.FailureReason != "" {
-			acc.failureReasons[raw.FailureReason]++
+		acc.metrics["alloc_bytes"] = append(acc.metrics["alloc_bytes"], float64(raw.Measurement.SystemMetrics.AllocBytes))
+		acc.metrics["malloc_count"] = append(acc.metrics["malloc_count"], float64(raw.Measurement.SystemMetrics.MallocCount))
+		acc.metrics["gc_count"] = append(acc.metrics["gc_count"], float64(raw.Measurement.SystemMetrics.GCCount))
+		acc.metrics["first_path_elapsed_ms"] = appendOptional(acc.metrics["first_path_elapsed_ms"], raw.ExecutionResult.TimeToFirstPathMS)
+		acc.metrics["best_path_elapsed_ms"] = appendOptional(acc.metrics["best_path_elapsed_ms"], raw.ExecutionResult.TimeToBestFoundMS)
+		acc.metrics["improvement_count"] = append(acc.metrics["improvement_count"], float64(raw.ExecutionResult.ImprovementCount))
+		acc.metrics["bridge_overhead_ratio"] = append(acc.metrics["bridge_overhead_ratio"], raw.ExecutionResult.BridgeOverheadRatio)
+		acc.metrics["duplicated_work_ratio"] = append(acc.metrics["duplicated_work_ratio"], raw.ExecutionResult.DuplicatedWorkRatio)
+		acc.metrics["state_reuse_ratio"] = append(acc.metrics["state_reuse_ratio"], raw.ExecutionResult.StateReuseRatio)
+		if raw.ExecutionResult.FailureReason != "" {
+			acc.failureReasons[raw.ExecutionResult.FailureReason]++
 		}
 	}
 	for _, acc := range groups {
@@ -850,30 +875,20 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			r.MinDistance = &min
 			r.MaxDistance = &max
 		}
-		out.Cases = append(out.Cases, *r)
-		if s.Acceptance.FoundRateMin != nil && r.FoundRate < *s.Acceptance.FoundRateMin {
-			out.Passed = false
-			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s path_found_rate %.6f < %.6f", r.ScenarioID, r.Algorithm, r.FoundRate, *s.Acceptance.FoundRateMin))
-		}
-		if s.Acceptance.ExactRateMin != nil && r.ExactRate < *s.Acceptance.ExactRateMin {
-			out.Passed = false
-			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s optimality_proven_rate %.6f < %.6f", r.ScenarioID, r.Algorithm, r.ExactRate, *s.Acceptance.ExactRateMin))
-		}
-		if s.Acceptance.AverageWorkMax != nil && r.AverageWork > *s.Acceptance.AverageWorkMax {
-			out.Passed = false
-			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s mean_work_actions %.3f > %.3f", r.ScenarioID, r.Algorithm, r.AverageWork, *s.Acceptance.AverageWorkMax))
-		}
+		out.ScenarioSummaries = append(out.ScenarioSummaries, *r)
 	}
-	sort.Slice(out.Cases, func(i, j int) bool {
-		if out.Cases[i].ScenarioID == out.Cases[j].ScenarioID {
-			if out.Cases[i].Algorithm == out.Cases[j].Algorithm {
-				return out.Cases[i].QueryID < out.Cases[j].QueryID
+	sort.Slice(out.ScenarioSummaries, func(i, j int) bool {
+		if out.ScenarioSummaries[i].ScenarioID == out.ScenarioSummaries[j].ScenarioID {
+			if out.ScenarioSummaries[i].Algorithm == out.ScenarioSummaries[j].Algorithm {
+				return out.ScenarioSummaries[i].QueryID < out.ScenarioSummaries[j].QueryID
 			}
-			return out.Cases[i].Algorithm < out.Cases[j].Algorithm
+			return out.ScenarioSummaries[i].Algorithm < out.ScenarioSummaries[j].Algorithm
 		}
-		return out.Cases[i].ScenarioID < out.Cases[j].ScenarioID
+		return out.ScenarioSummaries[i].ScenarioID < out.ScenarioSummaries[j].ScenarioID
 	})
-	out.DurationMS = float64(time.Since(started).Microseconds()) / 1000
+	completedAt := time.Now()
+	out.RunMetadata.CompletedAt = completedAt.UTC().Format(time.RFC3339Nano)
+	out.RunMetadata.DurationMS = float64(completedAt.Sub(started).Microseconds()) / 1000
 	if s.Output.OutputDir != "" {
 		if err := writeJSONFile(filepath.Join(s.Output.OutputDir, "result.json"), out, opts.Overwrite); err != nil {
 			return BenchmarkResult{}, err
@@ -934,7 +949,62 @@ func startHeapSampler(enabled bool, initial uint64) func() uint64 {
 	return func() uint64 { close(done); return <-result }
 }
 
-func rawRunStableDigest(raw RawRunResult) string {
+func averageOutDegree(g *core.AdjacencyGraph) float64 {
+	if g == nil || g.NodeCount() == 0 {
+		return 0
+	}
+	return float64(g.EdgeCount()) / float64(g.NodeCount())
+}
+
+func edgeDensity(g *core.AdjacencyGraph) float64 {
+	if g == nil || g.NodeCount() < 2 {
+		return 0
+	}
+	nodes := float64(g.NodeCount())
+	denominator := nodes * (nodes - 1)
+	if !g.Directed() {
+		denominator /= 2
+	}
+	if denominator == 0 {
+		return 0
+	}
+	return float64(g.EdgeCount()) / denominator
+}
+
+func queryStableHash(queryID, strategy string, source, target uint32, seed int64) string {
+	payload := struct {
+		QueryID   string `json:"query_id"`
+		Strategy  string `json:"query_selection_method"`
+		Source    uint32 `json:"source"`
+		Target    uint32 `json:"target"`
+		QuerySeed int64  `json:"query_seed"`
+	}{queryID, strategy, source, target, seed}
+	b, _ := json.Marshal(payload)
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
+
+func terminationReason(found bool, code core.ErrorCode) string {
+	if found {
+		return "path_returned"
+	}
+	switch code {
+	case core.ErrDeadlineExceeded, core.ErrCancelled:
+		return "timeout"
+	case core.ErrBudgetExhausted:
+		return "budget_exhausted"
+	case core.ErrNoPath:
+		return "unreachable"
+	case core.ErrInvalidRequest:
+		return "invalid_request"
+	case "":
+		return "completed_without_path"
+	default:
+		return "error"
+	}
+}
+
+func rawRunStableDigest(raw BenchmarkRun) string {
 	payload := struct {
 		ScenarioID string           `json:"scenario_id"`
 		Algorithm  string           `json:"algorithm"`
@@ -945,13 +1015,23 @@ func rawRunStableDigest(raw RawRunResult) string {
 		Distance   *float64         `json:"path_cost,omitempty"`
 		Work       core.WorkMetrics `json:"work"`
 		ErrorCode  core.ErrorCode   `json:"error_code,omitempty"`
-	}{raw.ScenarioID, raw.Algorithm, raw.QueryID, raw.Seed, raw.Found, raw.Exact, raw.Distance, raw.Work, raw.ErrorCode}
+	}{
+		raw.RunMetadata.ScenarioID,
+		raw.RunMetadata.AlgorithmID,
+		raw.RunMetadata.QueryID,
+		raw.RunMetadata.ExecutionSeed,
+		raw.ExecutionResult.PathFound,
+		raw.ExecutionResult.OptimalityProven,
+		raw.ExecutionResult.PathCost,
+		raw.Measurement.Work,
+		raw.ExecutionResult.ErrorCode,
+	}
 	b, _ := json.Marshal(payload)
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
 }
 
-func writeTraceManifest(dir string, raw RawRunResult, sampleRate float64, metrics ultrasound.CollectorMetrics, tracePath string) error {
+func writeTraceManifest(dir string, raw BenchmarkRun, sampleRate float64, metrics ultrasound.CollectorMetrics, tracePath string) error {
 	b, err := os.ReadFile(tracePath)
 	if err != nil {
 		return err
@@ -959,9 +1039,9 @@ func writeTraceManifest(dir string, raw RawRunResult, sampleRate float64, metric
 	sum := sha256.Sum256(b)
 	manifest := map[string]any{
 		"schema_version":       "bridge.trace.v1",
-		"run_id":               raw.RunID,
+		"run_id":               raw.RunMetadata.RunID,
 		"created_at":           time.Now().UTC().Format(time.RFC3339Nano),
-		"ultrasound_mode":      raw.Observation.Mode,
+		"ultrasound_mode":      raw.ScenarioDefinition.ObservationMode,
 		"sample_rate":          sampleRate,
 		"sampling_algorithm":   "fnv1a-seed-ordinal-kind-v1",
 		"event_count":          metrics.EventCount,
@@ -969,7 +1049,7 @@ func writeTraceManifest(dir string, raw RawRunResult, sampleRate float64, metric
 		"truncated":            metrics.Truncated,
 		"observer_overhead_ns": metrics.ObservationNS,
 		"sink_write_ns":        metrics.SinkWriteNS,
-		"stable_digest":        raw.StableDigest,
+		"stable_digest":        raw.RunMetadata.StableDigest,
 		"trace_sha256":         hex.EncodeToString(sum[:]),
 		"trace_file":           filepath.Base(tracePath),
 	}

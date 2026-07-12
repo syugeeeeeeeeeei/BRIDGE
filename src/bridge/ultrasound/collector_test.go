@@ -54,40 +54,33 @@ func (s closeSink) Close(context.Context) error {
 	return s.err
 }
 
-func TestObservationModesSeparateSummaryTraceAndProfile(t *testing.T) {
+func TestObservationModesSeparateAggregateAndTrace(t *testing.T) {
 	events := []bearing.Event{
 		{Phase: "search", Kind: "search_started"},
 		{Phase: "search", Kind: "incumbent_updated", Attributes: map[string]any{"distance": 2.0}},
 		{Phase: "search", Kind: "node_expanded"},
 		{Phase: "search", Kind: "action"},
 	}
-	summarySink := &MemorySink{}
-	summary := NewCollector("summary", summarySink)
+	aggregateSink := &MemorySink{}
+	aggregate := NewCollector("aggregate", aggregateSink)
 	traceSink := &MemorySink{}
 	trace := NewCollector("trace", traceSink)
-	profileSink := &MemorySink{}
-	profile := NewCollector("profile", profileSink)
 	for _, e := range events {
-		summary.Observe(e)
+		aggregate.Observe(e)
 		trace.Observe(e)
-		profile.Observe(e)
 	}
-	_ = summary.Close(context.Background())
+	_ = aggregate.Close(context.Background())
 	_ = trace.Close(context.Background())
-	_ = profile.Close(context.Background())
-	if len(summarySink.Events()) != 0 {
-		t.Fatal("summary must not write trace events")
+	if len(aggregateSink.Events()) != 0 {
+		t.Fatal("aggregate must not write trace events")
 	}
-	if summary.Metrics().EventCount != 2 {
-		t.Fatalf("summary count=%d", summary.Metrics().EventCount)
+	if aggregate.Metrics().EventCount != 3 {
+		t.Fatalf("aggregate count=%d", aggregate.Metrics().EventCount)
 	}
-	if len(traceSink.Events()) != 3 {
+	if len(traceSink.Events()) != 4 {
 		t.Fatalf("trace events=%d", len(traceSink.Events()))
 	}
-	if len(profileSink.Events()) != 4 {
-		t.Fatalf("profile events=%d", len(profileSink.Events()))
-	}
-	if profile.Metrics().ObservationNS <= 0 {
-		t.Fatal("profile overhead was not recorded")
+	if trace.Metrics().EventCount != 4 {
+		t.Fatalf("trace count=%d", trace.Metrics().EventCount)
 	}
 }

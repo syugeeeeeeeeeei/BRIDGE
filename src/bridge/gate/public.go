@@ -55,10 +55,9 @@ type BudgetInput struct {
 type ObservationMode string
 
 const (
-	ObservationOff     ObservationMode = "off"
-	ObservationSummary ObservationMode = "summary"
-	ObservationProfile ObservationMode = "profile"
-	ObservationTrace   ObservationMode = "trace"
+	ObservationOff       ObservationMode = "off"
+	ObservationAggregate ObservationMode = "aggregate"
+	ObservationTrace     ObservationMode = "trace"
 )
 
 type AblationInput = core.AblationOptions
@@ -336,7 +335,7 @@ func resolveObservationMode(opts RouteOptions, fallback ObservationMode) (Observ
 		obsMode = ObservationOff
 	}
 	switch obsMode {
-	case ObservationOff, ObservationSummary, ObservationTrace, ObservationProfile:
+	case ObservationOff, ObservationAggregate, ObservationTrace:
 		return obsMode, nil
 	default:
 		return "", &PublicError{Code: "INVALID_OBSERVATION", Message: fmt.Sprintf("unsupported observation mode %q", obsMode)}

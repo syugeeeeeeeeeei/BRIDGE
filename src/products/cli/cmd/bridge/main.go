@@ -298,9 +298,6 @@ func benchmarkRun(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "error:", err)
 		return exitUsage
 	}
-	if !result.Passed {
-		return exitAcceptance
-	}
 	return 0
 }
 
@@ -407,13 +404,12 @@ func writeBenchmark(w io.Writer, format string, r traffic.BenchmarkResult) error
 		return enc.Encode(r)
 	case "jsonl":
 		enc := json.NewEncoder(w)
-		for _, c := range r.Cases {
+		for _, c := range r.ScenarioSummaries {
 			row := struct {
 				SchemaVersion string `json:"schema_version"`
 				SuiteID       string `json:"suite_id"`
-				Passed        bool   `json:"passed"`
-				traffic.CaseResult
-			}{r.SchemaVersion, r.SuiteID, r.Passed, c}
+				traffic.ScenarioSummary
+			}{r.SchemaVersion, r.SuiteID, c}
 			if err := enc.Encode(row); err != nil {
 				return err
 			}
@@ -422,19 +418,19 @@ func writeBenchmark(w io.Writer, format string, r traffic.BenchmarkResult) error
 	case "csv":
 		cw := csv.NewWriter(w)
 		defer cw.Flush()
-		if err := cw.Write([]string{"suite_id", "scenario_id", "algorithm", "target_kind", "execution_path", "runs", "path_found_rate", "optimality_proven_rate", "mean_path_cost", "mean_work_actions", "mean_solver_time_ms", "mean_end_to_end_time_ms", "passed"}); err != nil {
+		if err := cw.Write([]string{"suite_id", "scenario_id", "algorithm", "target_kind", "execution_path", "runs", "path_found_rate", "optimality_proven_rate", "mean_path_cost", "mean_work_actions", "mean_solver_time_ms", "mean_end_to_end_time_ms"}); err != nil {
 			return err
 		}
-		for _, c := range r.Cases {
-			if err := cw.Write([]string{r.SuiteID, c.ScenarioID, c.Algorithm, c.TargetKind, c.ExecutionPath, strconv.Itoa(c.Runs), fmt.Sprintf("%.6f", c.FoundRate), fmt.Sprintf("%.6f", c.ExactRate), fmt.Sprintf("%.9g", c.AverageDistance), fmt.Sprintf("%.3f", c.AverageWork), fmt.Sprintf("%.3f", c.AverageSolverTimeMS), fmt.Sprintf("%.3f", c.AverageEndToEndMS), strconv.FormatBool(r.Passed)}); err != nil {
+		for _, c := range r.ScenarioSummaries {
+			if err := cw.Write([]string{r.SuiteID, c.ScenarioID, c.Algorithm, c.TargetKind, c.ExecutionPath, strconv.Itoa(c.Runs), fmt.Sprintf("%.6f", c.FoundRate), fmt.Sprintf("%.6f", c.ExactRate), fmt.Sprintf("%.9g", c.AverageDistance), fmt.Sprintf("%.3f", c.AverageWork), fmt.Sprintf("%.3f", c.AverageSolverTimeMS), fmt.Sprintf("%.3f", c.AverageEndToEndMS)}); err != nil {
 				return err
 			}
 		}
 		return cw.Error()
 	case "console":
-		fmt.Fprintf(w, "Suite: %s\nPassed: %t\n\n", r.SuiteID, r.Passed)
+		fmt.Fprintf(w, "Suite: %s\nExecution Succeeded: %t\n\n", r.SuiteID, r.RunMetadata.ExecutionSucceeded)
 		fmt.Fprintln(w, "SCENARIO\tALGORITHM\tPATH\tRUNS\tPATH FOUND\tOPTIMALITY\tMEAN WORK\tSOLVER MS\tEND-TO-END MS")
-		for _, c := range r.Cases {
+		for _, c := range r.ScenarioSummaries {
 			fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%.3f\t%.3f\t%.1f\t%.3f\t%.3f\n", c.ScenarioID, c.Algorithm, c.ExecutionPath, c.Runs, c.FoundRate, c.ExactRate, c.AverageWork, c.AverageSolverTimeMS, c.AverageEndToEndMS)
 		}
 		for _, f := range r.Failures {

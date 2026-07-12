@@ -1,4 +1,4 @@
-export type ObservationMode = "off" | "summary" | "trace" | "profile";
+export type ObservationMode = "off" | "aggregate" | "trace";
 export interface GraphNode { id: number; x?: number; y?: number }
 export interface GraphEdge { from: number; to: number; weight: number }
 export interface RouteRequest {

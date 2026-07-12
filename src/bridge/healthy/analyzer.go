@@ -55,16 +55,19 @@ func Analyze(ctx context.Context, artifact traffic.BenchmarkResult, profile Heal
 	if err := profile.Validate(); err != nil {
 		return HealthCheckResult{}, err
 	}
+	if err := validateArtifact(artifact); err != nil {
+		return HealthCheckResult{}, err
+	}
 	payload, _ := json.Marshal(artifact)
 	sum := sha256.Sum256(payload)
 	out := HealthCheckResult{SchemaVersion: ResultSchemaV1, SourceArtifactID: artifact.ArtifactID, SourceSchemaVersion: artifact.SchemaVersion, SourceArtifactSHA256: hex.EncodeToString(sum[:]), GeneratedAt: time.Now().UTC().Format(time.RFC3339Nano), Profile: profile}
 	validByRun := map[string]bool{}
-	for _, run := range artifact.RawRuns {
-		if run.Warmup {
+	for _, run := range artifact.Runs {
+		if run.RunMetadata.WarmupRun {
 			continue
 		}
-		rv := RunValidation{RunID: run.RunID, Algorithm: run.Algorithm, Status: StatusPass}
-		g, err := traffic.BuildScenarioGraph(run.GraphSpec, run.Graph.Seed)
+		rv := RunValidation{RunID: run.RunMetadata.RunID, Algorithm: run.RunMetadata.AlgorithmID, Status: StatusPass}
+		g, err := traffic.BuildScenarioGraph(run.References.GraphSpecification, run.GraphProfile.GraphSeed)
 		if err != nil {
 			rv.Status = StatusNotVerifiable
 			rv.Path.Errors = []string{"graph reconstruction: " + err.Error()}
@@ -73,8 +76,8 @@ func Analyze(ctx context.Context, artifact traffic.BenchmarkResult, profile Heal
 		}
 		rv.Path = ValidatePath(g, run, profile.Validation)
 		var reconstructed *core.WorkMetrics
-		if run.TraceManifestPath != "" || run.TracePath != "" {
-			events, manifest, traceErr := loadTrace(run.TraceManifestPath, run.TracePath)
+		if run.References.TraceManifestPath != "" || run.References.TracePath != "" {
+			events, manifest, traceErr := loadTrace(run.References.TraceManifestPath, run.References.TracePath)
 			if traceErr == nil {
 				rec := ReconstructWork(events, manifest.SampleRate, manifest.Truncated, manifest.Dropped)
 				if rec.Verifiable {
@@ -82,12 +85,12 @@ func Analyze(ctx context.Context, artifact traffic.BenchmarkResult, profile Heal
 				}
 			}
 		}
-		rv.Work = ValidateWorkWithLedger(run.Work, reconstructed, run.BudgetLedger)
+		rv.Work = ValidateWorkWithLedger(run.Measurement.Work, reconstructed, run.ExecutionResult.BudgetLedger)
 		if profile.Validation.RequireWorkTrace && !rv.Work.TraceVerifiable {
 			rv.Work.Status = StatusInvalid
 			rv.Work.Mismatches = append(rv.Work.Mismatches, "required work trace is not verifiable")
 		}
-		if profile.Validation.RequireBudgetLedger && run.Algorithm == "bridge" && !rv.Work.LedgerVerifiable {
+		if profile.Validation.RequireBudgetLedger && run.RunMetadata.AlgorithmID == "bridge" && !rv.Work.LedgerVerifiable {
 			rv.Work.Status = StatusInvalid
 			rv.Work.Mismatches = append(rv.Work.Mismatches, "required budget ledger is missing")
 		}
@@ -98,40 +101,56 @@ func Analyze(ctx context.Context, artifact traffic.BenchmarkResult, profile Heal
 		if rv.Exact.FalsePositive || rv.Exact.FalseNegative || !rv.Exact.ExactClaimValid {
 			rv.Status = StatusInvalid
 		}
-		validByRun[run.RunID] = rv.Status == StatusPass
+		validByRun[run.RunMetadata.RunID] = rv.Status == StatusPass
 		out.RunValidations = append(out.RunValidations, rv)
 	}
-	out.PairedComparisons = Pair(artifact.RawRuns, profile, validByRun)
+	out.PairedComparisons = Pair(artifact.Runs, profile, validByRun)
 	out.Summary = summarize(out.RunValidations)
 	out.RegressionEvaluation = evaluate(out, profile)
 	return out, nil
 }
 
-func ValidatePath(g core.Graph, run traffic.RawRunResult, policy ValidationPolicy) PathValidation {
+func validateArtifact(artifact traffic.BenchmarkResult) error {
+	if artifact.SchemaVersion != traffic.BenchmarkResultSchemaV1 {
+		return fmt.Errorf("schema_version must be %q", traffic.BenchmarkResultSchemaV1)
+	}
+	if artifact.TerminologyVersion != traffic.TerminologyVersionV1 {
+		return fmt.Errorf("terminology_version must be %q", traffic.TerminologyVersionV1)
+	}
+	if artifact.RunMetadata.StartedAt == "" {
+		return fmt.Errorf("run_metadata.started_at is required")
+	}
+	if len(artifact.Runs) == 0 {
+		return fmt.Errorf("runs must not be empty")
+	}
+	return nil
+}
+
+func ValidatePath(g core.Graph, run traffic.BenchmarkRun, policy ValidationPolicy) PathValidation {
 	v := PathValidation{PathValid: true, EndpointValid: true, EdgeSequenceValid: true, FoundConsistent: true, DistanceConsistent: true}
 	fail := func(msg string) { v.PathValid = false; v.Errors = append(v.Errors, msg) }
-	if !run.Found {
-		if len(run.Path) > 0 {
+	if !run.ExecutionResult.PathFound {
+		if len(run.ExecutionResult.Path) > 0 {
 			v.FoundConsistent = false
 			fail("found=false with non-empty path")
 		}
-		if run.Distance != nil {
+		if run.ExecutionResult.PathCost != nil {
 			v.FoundConsistent = false
 			fail("found=false with distance")
 		}
 		return v
 	}
-	if len(run.Path) == 0 {
+	if len(run.ExecutionResult.Path) == 0 {
 		v.FoundConsistent = false
 		fail("found=true with empty path")
 		return v
 	}
-	if run.Path[0] != run.Query.Source || run.Path[len(run.Path)-1] != run.Query.Target {
+	if run.ExecutionResult.Path[0] != run.QueryProfile.Source || run.ExecutionResult.Path[len(run.ExecutionResult.Path)-1] != run.QueryProfile.Target {
 		v.EndpointValid = false
 		fail("path endpoints do not match query")
 	}
 	total := 0.0
-	for i, n := range run.Path {
+	for i, n := range run.ExecutionResult.Path {
 		if !g.HasNode(n) {
 			v.EdgeSequenceValid = false
 			fail(fmt.Sprintf("path node %d does not exist", n))
@@ -140,7 +159,7 @@ func ValidatePath(g core.Graph, run traffic.RawRunResult, policy ValidationPolic
 		if i == 0 {
 			continue
 		}
-		prev := run.Path[i-1]
+		prev := run.ExecutionResult.Path[i-1]
 		found := false
 		weight := 0.0
 		for _, e := range g.EdgesFrom(prev) {
@@ -160,12 +179,12 @@ func ValidatePath(g core.Graph, run traffic.RawRunResult, policy ValidationPolic
 	if v.EdgeSequenceValid {
 		v.RecomputedDistance = &total
 	}
-	if run.Distance == nil {
+	if run.ExecutionResult.PathCost == nil {
 		v.DistanceConsistent = false
 		fail("found=true without distance")
-	} else if !closeFloat(*run.Distance, total, policy.DistanceAbsoluteTolerance, policy.DistanceRelativeTolerance) {
+	} else if !closeFloat(*run.ExecutionResult.PathCost, total, policy.DistanceAbsoluteTolerance, policy.DistanceRelativeTolerance) {
 		v.DistanceConsistent = false
-		fail(fmt.Sprintf("reported distance %.17g differs from recomputed %.17g", *run.Distance, total))
+		fail(fmt.Sprintf("reported distance %.17g differs from recomputed %.17g", *run.ExecutionResult.PathCost, total))
 	}
 	return v
 }
@@ -223,32 +242,32 @@ func workEquivalent(a, b core.WorkMetrics) bool {
 	return a == b
 }
 
-func validateExact(ctx context.Context, g core.Graph, run traffic.RawRunResult, p HealthProfile) ExactValidation {
+func validateExact(ctx context.Context, g core.Graph, run traffic.BenchmarkRun, p HealthProfile) ExactValidation {
 	in := graphInput(g)
-	res, err := gate.NewRouter().ExecuteOnce(ctx, gate.ExecuteRequest{SchemaVersion: gate.ExecuteRequestSchemaV1, Target: gate.ExecuteTargetInput{ID: p.ExactReferenceAlgorithm}, Graph: in, Route: gate.RouteInput{Source: uint32(run.Query.Source), Target: uint32(run.Query.Target), Mode: core.ModeExact, Workers: 1}, Observation: gate.ObservationInput{Mode: gate.ObservationOff}}, gate.RouteOptions{})
+	res, err := gate.NewRouter().ExecuteOnce(ctx, gate.ExecuteRequest{SchemaVersion: gate.ExecuteRequestSchemaV1, Target: gate.ExecuteTargetInput{ID: p.ExactReferenceAlgorithm}, Graph: in, Route: gate.RouteInput{Source: uint32(run.QueryProfile.Source), Target: uint32(run.QueryProfile.Target), Mode: core.ModeExact, Workers: 1}, Observation: gate.ObservationInput{Mode: gate.ObservationOff}}, gate.RouteOptions{})
 	if err != nil {
-		return ExactValidation{Verifiable: false, ExactClaimValid: !run.Exact}
+		return ExactValidation{Verifiable: false, ExactClaimValid: !run.ExecutionResult.OptimalityProven}
 	}
-	x := ExactValidation{Verifiable: true, ReferenceFound: res.Found, FalsePositive: run.Found && !res.Found, FalseNegative: !run.Found && res.Found, ExactClaimValid: true}
+	x := ExactValidation{Verifiable: true, ReferenceFound: res.Found, FalsePositive: run.ExecutionResult.PathFound && !res.Found, FalseNegative: !run.ExecutionResult.PathFound && res.Found, ExactClaimValid: true}
 	if res.Distance != nil {
 		d := *res.Distance
 		x.ReferenceDistance = &d
 	}
-	if run.Found && res.Found && run.Distance != nil && res.Distance != nil {
+	if run.ExecutionResult.PathFound && res.Found && run.ExecutionResult.PathCost != nil && res.Distance != nil {
 		if *res.Distance == 0 {
 			r := 1.0
-			if *run.Distance != 0 {
+			if *run.ExecutionResult.PathCost != 0 {
 				r = math.Inf(1)
 			}
 			x.DistanceRatio = &r
 		} else {
-			r := *run.Distance / *res.Distance
+			r := *run.ExecutionResult.PathCost / *res.Distance
 			x.DistanceRatio = &r
 		}
-		if run.Exact && !closeFloat(*run.Distance, *res.Distance, p.Validation.DistanceAbsoluteTolerance, p.Validation.DistanceRelativeTolerance) {
+		if run.ExecutionResult.OptimalityProven && !closeFloat(*run.ExecutionResult.PathCost, *res.Distance, p.Validation.DistanceAbsoluteTolerance, p.Validation.DistanceRelativeTolerance) {
 			x.ExactClaimValid = false
 		}
-	} else if run.Exact && run.Found != res.Found {
+	} else if run.ExecutionResult.OptimalityProven && run.ExecutionResult.PathFound != res.Found {
 		x.ExactClaimValid = false
 	}
 	return x
@@ -266,8 +285,8 @@ func graphInput(g core.Graph) gate.GraphInput {
 	}
 	return in
 }
-func pairKey(r traffic.RawRunResult) string {
-	return fmt.Sprintf("%s|%s|%s|%d|%d", r.ScenarioID, r.GraphInstanceID, r.QueryID, r.Seed, r.Repetition)
+func pairKey(r traffic.BenchmarkRun) string {
+	return fmt.Sprintf("%s|%s|%s|%d|%d", r.RunMetadata.ScenarioID, r.GraphProfile.GraphInstanceID, r.QueryProfile.QueryID, r.RunMetadata.ExecutionSeed, r.RunMetadata.RepetitionIndex)
 }
 func ratio(a, b float64) *float64 {
 	if b == 0 {
@@ -276,21 +295,21 @@ func ratio(a, b float64) *float64 {
 	v := a / b
 	return &v
 }
-func Pair(runs []traffic.RawRunResult, p HealthProfile, valid map[string]bool) []PairedComparison {
+func Pair(runs []traffic.BenchmarkRun, p HealthProfile, valid map[string]bool) []PairedComparison {
 	if p.PerformanceReferenceAlgorithm == "" {
 		return nil
 	}
-	cand := map[string]traffic.RawRunResult{}
-	ref := map[string]traffic.RawRunResult{}
+	cand := map[string]traffic.BenchmarkRun{}
+	ref := map[string]traffic.BenchmarkRun{}
 	for _, r := range runs {
-		if r.Warmup {
+		if r.RunMetadata.WarmupRun {
 			continue
 		}
 		k := pairKey(r)
-		if r.Algorithm == p.CandidateAlgorithm {
+		if r.RunMetadata.AlgorithmID == p.CandidateAlgorithm {
 			cand[k] = r
 		}
-		if r.Algorithm == p.PerformanceReferenceAlgorithm {
+		if r.RunMetadata.AlgorithmID == p.PerformanceReferenceAlgorithm {
 			ref[k] = r
 		}
 	}
@@ -303,12 +322,12 @@ func Pair(runs []traffic.RawRunResult, p HealthProfile, valid map[string]bool) [
 	for _, k := range keys {
 		c := cand[k]
 		r, ok := ref[k]
-		if !ok || !valid[c.RunID] || !valid[r.RunID] {
+		if !ok || !valid[c.RunMetadata.RunID] || !valid[r.RunMetadata.RunID] {
 			continue
 		}
-		pc := PairedComparison{PairKey: k, CandidateRunID: c.RunID, ReferenceRunID: r.RunID, WorkRatio: ratio(float64(c.Work.TotalActions), float64(r.Work.TotalActions)), LogicalStepRatio: ratio(float64(c.Work.LogicalSteps), float64(r.Work.LogicalSteps)), ScheduledStepRatio: ratio(float64(c.Work.ScheduledSteps), float64(r.Work.ScheduledSteps)), SolverTimeRatio: ratio(c.SolverTimeMS, r.SolverTimeMS), EndToEndTimeRatio: ratio(c.EndToEndTimeMS, r.EndToEndTimeMS), AllocBytesRatio: ratio(float64(c.SystemMetrics.AllocBytes), float64(r.SystemMetrics.AllocBytes))}
-		if c.Distance != nil && r.Distance != nil {
-			pc.DistanceRatio = ratio(*c.Distance, *r.Distance)
+		pc := PairedComparison{PairKey: k, CandidateRunID: c.RunMetadata.RunID, ReferenceRunID: r.RunMetadata.RunID, WorkRatio: ratio(float64(c.Measurement.Work.TotalActions), float64(r.Measurement.Work.TotalActions)), LogicalStepRatio: ratio(float64(c.Measurement.Work.LogicalSteps), float64(r.Measurement.Work.LogicalSteps)), ScheduledStepRatio: ratio(float64(c.Measurement.Work.ScheduledSteps), float64(r.Measurement.Work.ScheduledSteps)), SolverTimeRatio: ratio(c.Measurement.SolverTimeMS, r.Measurement.SolverTimeMS), EndToEndTimeRatio: ratio(c.Measurement.EndToEndTimeMS, r.Measurement.EndToEndTimeMS), AllocBytesRatio: ratio(float64(c.Measurement.SystemMetrics.AllocBytes), float64(r.Measurement.SystemMetrics.AllocBytes))}
+		if c.ExecutionResult.PathCost != nil && r.ExecutionResult.PathCost != nil {
+			pc.DistanceRatio = ratio(*c.ExecutionResult.PathCost, *r.ExecutionResult.PathCost)
 		}
 		out = append(out, pc)
 	}

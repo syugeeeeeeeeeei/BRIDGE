@@ -58,12 +58,10 @@ func NewCollectorConfigured(mode string, sink EventSink, maxEvents uint64, sampl
 func (c *Collector) Wants(kind string) bool {
 	class := bearing.ClassifyEvent(kind)
 	switch c.mode {
-	case "profile":
-		return true
 	case "trace":
-		return class != bearing.ClassProfile
-	case "summary":
-		return class == bearing.ClassControl || class == bearing.ClassCandidate
+		return true
+	case "aggregate":
+		return class == bearing.ClassControl || class == bearing.ClassCandidate || class == bearing.ClassProfile
 	default:
 		return false
 	}
@@ -101,8 +99,8 @@ func (c *Collector) Observe(e bearing.Event) {
 	}
 	c.metrics.LastSequence = c.seq
 	c.events = append(c.events, cloneEvent(e))
-	// summary intentionally performs no trace I/O.
-	if c.mode == "trace" || c.mode == "profile" {
+	// aggregate intentionally performs no trace I/O.
+	if c.mode == "trace" {
 		writeStarted := time.Now()
 		c.err = c.sink.WriteEvent(context.Background(), e)
 		c.metrics.SinkWriteNS += time.Since(writeStarted).Nanoseconds()
@@ -141,7 +139,7 @@ func (c *Collector) Close(ctx context.Context) error {
 	err := c.err
 	mode := c.mode
 	c.mu.Unlock()
-	if mode != "trace" && mode != "profile" {
+	if mode != "trace" {
 		return err
 	}
 	closeErr := c.sink.Close(ctx)

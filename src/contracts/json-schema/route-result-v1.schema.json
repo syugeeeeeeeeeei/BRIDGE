@@ -78,9 +78,8 @@
         "level": {
           "enum": [
             "off",
-            "summary",
-            "trace",
-            "profile"
+            "aggregate",
+            "trace"
           ]
         },
         "event_count": {

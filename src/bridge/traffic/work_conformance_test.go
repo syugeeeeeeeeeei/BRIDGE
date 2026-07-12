@@ -15,10 +15,10 @@ func TestAllRegisteredAlgorithmsProduceConservedWork(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(r.RawRuns) != 1 {
-				t.Fatalf("runs=%d", len(r.RawRuns))
+			if len(r.Runs) != 1 {
+				t.Fatalf("runs=%d", len(r.Runs))
 			}
-			w := r.RawRuns[0].Work
+			w := r.Runs[0].Measurement.Work
 			if !w.Valid() {
 				t.Fatalf("invalid Work: %+v errors=%v", w, w.ValidationErrors())
 			}
@@ -31,4 +31,3 @@ func TestUnsupportedAblationsAreRejected(t *testing.T) {
 		t.Fatal("unsupported ablation must be rejected")
 	}
 }
-

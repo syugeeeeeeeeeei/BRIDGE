@@ -43,15 +43,15 @@ func TestBenchmarkValidateRejectsInvalidScenario(t *testing.T) {
 	}
 }
 
-func TestBenchmarkRunAcceptanceExitCode(t *testing.T) {
+func TestBenchmarkRunReturnsSuccessWithoutTrafficSideAcceptance(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "fail.json")
-	data := `{"schema_version":"bridge.benchmark.v2","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":1},"algorithms":["bridge"],"observation_config":{"level":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}],"acceptance":{"mean_work_actions_max":0}}`
+	path := filepath.Join(dir, "run.json")
+	data := `{"schema_version":"bridge.benchmark.v2","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":1},"algorithms":["bridge"],"observation_config":{"level":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}]}`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
 		t.Fatal(err)
 	}
 	var out, errOut bytes.Buffer
-	if code := run([]string{"benchmark", path}, strings.NewReader(""), &out, &errOut); code != exitAcceptance {
+	if code := run([]string{"benchmark", path}, strings.NewReader(""), &out, &errOut); code != 0 {
 		t.Fatalf("code=%d err=%s out=%s", code, errOut.String(), out.String())
 	}
 	if !strings.Contains(errOut.String(), "run=") {

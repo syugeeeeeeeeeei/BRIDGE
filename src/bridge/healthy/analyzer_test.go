@@ -12,12 +12,16 @@ func TestValidatePathAndWork(t *testing.T) {
 	_ = g.AddEdge(0, 1, 2)
 	_ = g.AddEdge(1, 2, 3)
 	d := 5.0
-	r := traffic.RawRunResult{Found: true, Path: []core.NodeID{0, 1, 2}, Distance: &d, Query: traffic.QueryMetadata{Source: 0, Target: 2}, Work: core.WorkMetrics{TotalActions: 1, ExpandActions: 1, ScheduledSteps: 1, LogicalSteps: 1}}
+	r := traffic.BenchmarkRun{
+		QueryProfile:    traffic.QueryProfile{Source: 0, Target: 2},
+		ExecutionResult: traffic.ExecutionResult{PathFound: true, Path: []core.NodeID{0, 1, 2}, PathCost: &d},
+		Measurement:     traffic.Measurement{Work: core.WorkMetrics{TotalActions: 1, ExpandActions: 1, ScheduledSteps: 1, LogicalSteps: 1}},
+	}
 	v := ValidatePath(g, r, ValidationPolicy{DistanceAbsoluteTolerance: 1e-9, DistanceRelativeTolerance: 1e-9})
 	if !v.PathValid {
 		t.Fatalf("%+v", v)
 	}
-	if !ValidateWork(r.Work, nil).StructuralValid {
+	if !ValidateWork(r.Measurement.Work, nil).StructuralValid {
 		t.Fatal("work should be valid")
 	}
 }

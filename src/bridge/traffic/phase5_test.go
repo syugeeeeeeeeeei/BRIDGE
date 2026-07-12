@@ -68,11 +68,10 @@ func TestDatasetScenarioPersistsMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(result.RawRuns) != 1 || result.RawRuns[0].Graph.Dataset == nil {
-		t.Fatalf("dataset metadata missing: %+v", result.RawRuns)
+	if len(result.Runs) != 1 || result.Runs[0].GraphProfile.Dataset == nil {
+		t.Fatalf("dataset metadata missing: %+v", result.Runs)
 	}
-	if result.RawRuns[0].Graph.Dataset.License != "CC0-1.0" {
-		t.Fatalf("license missing: %+v", result.RawRuns[0].Graph.Dataset)
+	if result.Runs[0].GraphProfile.Dataset.License != "CC0-1.0" {
+		t.Fatalf("license missing: %+v", result.Runs[0].GraphProfile.Dataset)
 	}
 }
-
