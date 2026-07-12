@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "bridge.route.v1",
+  "$id": "bridge.route.request.v2",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,7 +10,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.route.v1"
+      "const": "bridge.route.request.v2"
     },
     "request_id": {
       "type": "string"
@@ -100,7 +100,7 @@
           "type": "integer",
           "minimum": 0
         },
-        "mode": {
+        "route_mode": {
           "enum": [
             "fast",
             "balanced",
@@ -112,7 +112,7 @@
           "type": "number",
           "minimum": 1
         },
-        "workers": {
+        "logical_worker_count": {
           "type": "integer",
           "minimum": 1
         },
@@ -136,11 +136,11 @@
         }
       }
     },
-    "observation": {
+    "observation_config": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "mode": {
+        "level": {
           "enum": [
             "off",
             "summary",

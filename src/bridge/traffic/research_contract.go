@@ -24,26 +24,28 @@ type GraphMetadata struct {
 	Generator string           `json:"generator"`
 	Topology  string           `json:"topology,omitempty"`
 	Seed      int64            `json:"seed"`
-	Nodes     int              `json:"nodes"`
-	Edges     int              `json:"edges"`
+	Nodes     int              `json:"actual_node_count"`
+	Edges     int              `json:"edge_count"`
 	Directed  bool             `json:"directed"`
 	Dataset   *DatasetMetadata `json:"dataset,omitempty"`
 }
 
 // QueryMetadata identifies one source-target query within a graph instance.
 type QueryMetadata struct {
-	Strategy string      `json:"strategy"`
+	Strategy string      `json:"query_selection_method"`
 	Source   core.NodeID `json:"source"`
 	Target   core.NodeID `json:"target"`
 }
 
 // QualityMetadata records result-quality facts that are independent of timing aggregation.
 type QualityMetadata struct {
-	Found            bool     `json:"found"`
-	Exact            bool     `json:"exact"`
+	Found            bool     `json:"path_found"`
+	SearchCompleted  bool     `json:"search_completed"`
+	Reachability     bool     `json:"reachability_proven"`
+	Exact            bool     `json:"optimality_proven"`
 	LowerBound       *float64 `json:"lower_bound,omitempty"`
-	CertifiedRatio   *float64 `json:"certified_ratio,omitempty"`
-	QualityCertified bool     `json:"quality_certified"`
+	CertifiedRatio   *float64 `json:"proven_cost_ratio,omitempty"`
+	QualityCertified bool     `json:"quality_bound_proven"`
 }
 
 // SummaryStatistics is recomputable from raw scalar observations.

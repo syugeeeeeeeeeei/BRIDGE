@@ -17,7 +17,7 @@ func TestProfileTraceWorkValidationEndToEnd(t *testing.T) {
 		Algorithms:    []string{"bridge", "anchor", "dijkstra", "bidirectional_dijkstra", "astar", "weighted_astar", "reachability"},
 		Observation:   traffic.ObservationSpec{Mode: "profile", SampleRate: 1},
 		Output:        traffic.OutputSpec{OutputDir: dir, SaveRawResults: true, SaveTrace: true},
-		Scenarios:     []traffic.ScenarioCase{{ID: "line", Graph: traffic.GeneratorSpec{Generator: "grid", Width: 4, Height: 1, Topology: "open"}, Queries: []traffic.QuerySpec{{ID: "q", Strategy: "explicit", Source: u32(0), Target: u32(3)}}, Route: traffic.RouteSpec{Mode: core.ModeBalanced, Workers: 1}, Budget: traffic.BudgetSpec{TotalWork: u64(10000)}}},
+		Scenarios:     []traffic.ScenarioCase{{ID: "line", Graph: traffic.GeneratorSpec{Generator: "grid", Width: 4, Height: 1, Topology: "open"}, Queries: []traffic.QuerySpec{{ID: "q", Strategy: "explicit_endpoints", Source: u32(0), Target: u32(3)}}, Route: traffic.RouteSpec{Mode: core.ModeBalanced, Workers: 1}, Budget: traffic.BudgetSpec{TotalWork: u64(10000)}}},
 	}
 	artifact, err := traffic.RunScenarioWithOptions(context.Background(), scenario, traffic.RunScenarioOptions{Overwrite: true})
 	if err != nil {

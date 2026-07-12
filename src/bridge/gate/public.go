@@ -12,10 +12,10 @@ import (
 )
 
 const (
-	RouteRequestSchemaV1   = "bridge.route.v1"
-	RouteResultSchemaV1    = "bridge.route.result.v1"
-	ExecuteRequestSchemaV1 = "bridge.execute_once.v1"
-	ExecuteResultSchemaV1  = "bridge.execute_once.result.v1"
+	RouteRequestSchemaV1   = "bridge.route.request.v2"
+	RouteResultSchemaV1    = "bridge.route.result.v2"
+	ExecuteRequestSchemaV1 = "bridge.execute_once.request.v2"
+	ExecuteResultSchemaV1  = "bridge.execute_once.result.v2"
 )
 
 type GraphNode struct {
@@ -41,9 +41,9 @@ type GraphInput struct {
 type RouteInput struct {
 	Source           uint32         `json:"source"`
 	Target           uint32         `json:"target"`
-	Mode             core.RouteMode `json:"mode,omitempty"`
+	Mode             core.RouteMode `json:"route_mode,omitempty"`
 	MaxSuboptimality *float64       `json:"max_suboptimality,omitempty"`
-	Workers          int            `json:"workers,omitempty"`
+	Workers          int            `json:"logical_worker_count,omitempty"`
 	Seed             uint64         `json:"seed,omitempty"`
 }
 
@@ -64,7 +64,8 @@ const (
 type AblationInput = core.AblationOptions
 
 type ObservationInput struct {
-	Mode ObservationMode `json:"mode,omitempty"`
+	Mode       ObservationMode `json:"level,omitempty"`
+	SampleRate *float64        `json:"sample_rate,omitempty"`
 }
 
 type RouteRequest struct {
@@ -73,7 +74,7 @@ type RouteRequest struct {
 	Graph         GraphInput       `json:"graph"`
 	Route         RouteInput       `json:"route"`
 	Budget        BudgetInput      `json:"budget,omitempty"`
-	Observation   ObservationInput `json:"observation,omitempty"`
+	Observation   ObservationInput `json:"observation_config,omitempty"`
 	Ablation      AblationInput    `json:"ablation,omitempty"`
 }
 
@@ -88,7 +89,7 @@ type ExecuteRequest struct {
 	Graph         GraphInput         `json:"graph"`
 	Route         RouteInput         `json:"route"`
 	Budget        BudgetInput        `json:"budget,omitempty"`
-	Observation   ObservationInput   `json:"observation,omitempty"`
+	Observation   ObservationInput   `json:"observation_config,omitempty"`
 	Ablation      AblationInput      `json:"ablation,omitempty"`
 }
 
@@ -108,7 +109,7 @@ type ObservationOptions struct {
 type RouteOptions struct{ Observation ObservationOptions }
 
 type ObservationResult struct {
-	Mode          ObservationMode `json:"mode"`
+	Mode          ObservationMode `json:"level"`
 	EventCount    uint64          `json:"event_count"`
 	DroppedEvents uint64          `json:"dropped_events,omitempty"`
 	Truncated     bool            `json:"truncated"`
@@ -121,20 +122,22 @@ type RouteResult struct {
 	SchemaVersion       string             `json:"schema_version"`
 	RequestID           string             `json:"request_id,omitempty"`
 	Status              string             `json:"status"`
-	Found               bool               `json:"found"`
-	Distance            *float64           `json:"distance,omitempty"`
+	Found               bool               `json:"path_found"`
+	SearchCompleted     bool               `json:"search_completed"`
+	ReachabilityProven  bool               `json:"reachability_proven"`
+	Distance            *float64           `json:"path_cost,omitempty"`
 	Path                []uint32           `json:"path"`
-	Exact               bool               `json:"exact"`
+	Exact               bool               `json:"optimality_proven"`
 	SolverName          string             `json:"solver_name,omitempty"`
 	Work                core.WorkMetrics   `json:"work"`
 	SolverTimeMS        float64            `json:"solver_time_ms,omitempty"`
 	TimeBreakdown       core.TimeBreakdown `json:"time_breakdown"`
-	TimeMS              float64            `json:"time_ms"`
+	TimeMS              float64            `json:"end_to_end_time_ms"`
 	ErrorCode           core.ErrorCode     `json:"error_code,omitempty"`
-	Observation         *ObservationResult `json:"observation,omitempty"`
+	Observation         *ObservationResult `json:"observation_data,omitempty"`
 	FailureReason       string             `json:"failure_reason,omitempty"`
-	TimeToFirstPathMS   *float64           `json:"time_to_first_path_ms,omitempty"`
-	TimeToBestFoundMS   *float64           `json:"time_to_best_found_ms,omitempty"`
+	TimeToFirstPathMS   *float64           `json:"first_path_elapsed_ms,omitempty"`
+	TimeToBestFoundMS   *float64           `json:"best_path_elapsed_ms,omitempty"`
 	ImprovementCount    uint64             `json:"improvement_count"`
 	BridgeOverheadRatio float64            `json:"bridge_overhead_ratio,omitempty"`
 	DuplicatedWorkRatio float64            `json:"duplicated_work_ratio,omitempty"`
@@ -146,10 +149,12 @@ type ExecuteResult struct {
 	SchemaVersion       string             `json:"schema_version"`
 	RequestID           string             `json:"request_id,omitempty"`
 	Status              string             `json:"status"`
-	Found               bool               `json:"found"`
-	Distance            *float64           `json:"distance,omitempty"`
+	Found               bool               `json:"path_found"`
+	SearchCompleted     bool               `json:"search_completed"`
+	ReachabilityProven  bool               `json:"reachability_proven"`
+	Distance            *float64           `json:"path_cost,omitempty"`
 	Path                []uint32           `json:"path"`
-	Exact               bool               `json:"exact"`
+	Exact               bool               `json:"optimality_proven"`
 	SolverName          string             `json:"solver_name,omitempty"`
 	TargetID            string             `json:"target_id"`
 	TargetKind          string             `json:"target_kind"`
@@ -159,10 +164,10 @@ type ExecuteResult struct {
 	TimeBreakdown       core.TimeBreakdown `json:"time_breakdown"`
 	EndToEndMS          float64            `json:"end_to_end_time_ms"`
 	ErrorCode           core.ErrorCode     `json:"error_code,omitempty"`
-	Observation         *ObservationResult `json:"observation,omitempty"`
+	Observation         *ObservationResult `json:"observation_data,omitempty"`
 	FailureReason       string             `json:"failure_reason,omitempty"`
-	TimeToFirstPathMS   *float64           `json:"time_to_first_path_ms,omitempty"`
-	TimeToBestFoundMS   *float64           `json:"time_to_best_found_ms,omitempty"`
+	TimeToFirstPathMS   *float64           `json:"first_path_elapsed_ms,omitempty"`
+	TimeToBestFoundMS   *float64           `json:"best_path_elapsed_ms,omitempty"`
 	ImprovementCount    uint64             `json:"improvement_count"`
 	BridgeOverheadRatio float64            `json:"bridge_overhead_ratio,omitempty"`
 	DuplicatedWorkRatio float64            `json:"duplicated_work_ratio,omitempty"`
@@ -222,7 +227,8 @@ func (r *Router) Route(ctx context.Context, req RouteRequest, opts RouteOptions)
 	if err != nil {
 		return RouteResult{}, err
 	}
-	out := RouteResult{SchemaVersion: RouteResultSchemaV1, RequestID: req.RequestID, Found: result.Found, Exact: result.Exact, SolverName: result.SolverName, Work: result.Work, SolverTimeMS: telemetryFloat(result.Telemetry, "solver_time_ms", result.TimeMS), TimeBreakdown: result.TimeBreakdown, TimeMS: result.TimeMS, ErrorCode: result.ErrorCode, Observation: observationResult, FailureReason: result.FailureReason, TimeToFirstPathMS: result.TimeToFirstPathMS, TimeToBestFoundMS: result.TimeToBestFoundMS, ImprovementCount: result.ImprovementCount, BridgeOverheadRatio: telemetryFloat(result.Telemetry, "bridge_overhead_ratio", 0), DuplicatedWorkRatio: telemetryFloat(result.Telemetry, "duplicated_work_ratio", 0), StateReuseRatio: telemetryFloat(result.Telemetry, "state_reuse_ratio", 0), BudgetLedger: result.BudgetLedger, Path: make([]uint32, len(result.Path))}
+	searchCompleted := !result.BudgetExhausted && !result.DeadlineExceeded && result.ErrorCode != core.ErrCancelled
+	out := RouteResult{SchemaVersion: RouteResultSchemaV1, RequestID: req.RequestID, Found: result.Found, SearchCompleted: searchCompleted, ReachabilityProven: searchCompleted, Exact: result.Exact, SolverName: result.SolverName, Work: result.Work, SolverTimeMS: telemetryFloat(result.Telemetry, "solver_time_ms", result.TimeMS), TimeBreakdown: result.TimeBreakdown, TimeMS: result.TimeMS, ErrorCode: result.ErrorCode, Observation: observationResult, FailureReason: result.FailureReason, TimeToFirstPathMS: result.TimeToFirstPathMS, TimeToBestFoundMS: result.TimeToBestFoundMS, ImprovementCount: result.ImprovementCount, BridgeOverheadRatio: telemetryFloat(result.Telemetry, "bridge_overhead_ratio", 0), DuplicatedWorkRatio: telemetryFloat(result.Telemetry, "duplicated_work_ratio", 0), StateReuseRatio: telemetryFloat(result.Telemetry, "state_reuse_ratio", 0), BudgetLedger: result.BudgetLedger, Path: make([]uint32, len(result.Path))}
 	for i, n := range result.Path {
 		out.Path[i] = uint32(n)
 	}
@@ -284,22 +290,24 @@ func (r *Router) ExecuteOnce(ctx context.Context, req ExecuteRequest, opts Route
 	}
 	observationResult := observationResultFromReporter(opts.Observation.Reporter)
 	out := ExecuteResult{
-		SchemaVersion: ExecuteResultSchemaV1,
-		RequestID:     req.RequestID,
-		Found:         result.Result.Found,
-		Exact:         result.Result.Exact,
-		SolverName:    result.Result.SolverName,
-		TargetID:      result.TargetID,
-		TargetKind:    string(result.TargetKind),
-		ExecutionPath: result.ExecutionPath,
-		Work:          result.Result.Work,
-		SolverTimeMS:  result.SolverTimeMS,
-		TimeBreakdown: result.Result.TimeBreakdown,
-		EndToEndMS:    result.EndToEndMS,
-		ErrorCode:     result.Result.ErrorCode,
-		Observation:   observationResult,
-		BudgetLedger:  result.Result.BudgetLedger,
-		Path:          make([]uint32, len(result.Result.Path)),
+		SchemaVersion:      ExecuteResultSchemaV1,
+		RequestID:          req.RequestID,
+		Found:              result.Result.Found,
+		SearchCompleted:    !result.Result.BudgetExhausted && !result.Result.DeadlineExceeded && result.Result.ErrorCode != core.ErrCancelled,
+		ReachabilityProven: !result.Result.BudgetExhausted && !result.Result.DeadlineExceeded && result.Result.ErrorCode != core.ErrCancelled,
+		Exact:              result.Result.Exact,
+		SolverName:         result.Result.SolverName,
+		TargetID:           result.TargetID,
+		TargetKind:         string(result.TargetKind),
+		ExecutionPath:      result.ExecutionPath,
+		Work:               result.Result.Work,
+		SolverTimeMS:       result.SolverTimeMS,
+		TimeBreakdown:      result.Result.TimeBreakdown,
+		EndToEndMS:         result.EndToEndMS,
+		ErrorCode:          result.Result.ErrorCode,
+		Observation:        observationResult,
+		BudgetLedger:       result.Result.BudgetLedger,
+		Path:               make([]uint32, len(result.Result.Path)),
 	}
 	for i, n := range result.Result.Path {
 		out.Path[i] = uint32(n)

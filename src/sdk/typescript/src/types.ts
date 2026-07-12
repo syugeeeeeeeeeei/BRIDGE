@@ -2,25 +2,27 @@ export type ObservationMode = "off" | "summary" | "trace" | "profile";
 export interface GraphNode { id: number; x?: number; y?: number }
 export interface GraphEdge { from: number; to: number; weight: number }
 export interface RouteRequest {
-  schema_version: "bridge.route.v1";
+  schema_version: "bridge.route.request.v2";
   request_id?: string;
   graph: { type: "inline"; directed?: boolean; nodes: GraphNode[]; edges: GraphEdge[] };
-  route: { source: number; target: number; mode?: string; max_suboptimality?: number; workers?: number; seed?: number };
+  route: { source: number; target: number; route_mode?: string; max_suboptimality?: number; logical_worker_count?: number; seed?: number };
   budget?: { total_work?: number; timeout_ms?: number };
-  observation?: { mode?: ObservationMode };
+  observation_config?: { level?: ObservationMode; sample_rate?: number };
 }
 export interface RouteResult {
-  schema_version: "bridge.route.result.v1";
+  schema_version: "bridge.route.result.v2";
   request_id?: string;
   status: string;
-  found: boolean;
-  distance?: number;
+  path_found: boolean;
+  search_completed: boolean;
+  reachability_proven: boolean;
+  path_cost?: number;
   path: number[];
-  exact: boolean;
+  optimality_proven: boolean;
   solver_name?: string;
   work: Record<string, number>;
-  time_ms: number;
+  end_to_end_time_ms: number;
   error_code?: string;
-  observation?: { mode: ObservationMode; event_count: number; dropped_events?: number; truncated: boolean };
+  observation_data?: { level: ObservationMode; event_count: number; dropped_events?: number; truncated: boolean };
 }
 export interface RouteResponse { result: RouteResult; warnings: string[] }

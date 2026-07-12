@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parents[1] / "src"))
 from bridge_sdk import BridgeClient, BridgeValidationError
 
-REQ = {"schema_version":"bridge.route.v1","request_id":"sdk-python","graph":{"type":"inline","nodes":[{"id":0},{"id":1}],"edges":[{"from":0,"to":1,"weight":1.0}]},"route":{"source":0,"target":1,"mode":"balanced"},"observation":{"mode":"off"}}
+REQ = {"schema_version":"bridge.route.request.v2","request_id":"sdk-python","graph":{"type":"inline","nodes":[{"id":0},{"id":1}],"edges":[{"from":0,"to":1,"weight":1.0}]},"route":{"source":0,"target":1,"route_mode":"balanced"},"observation_config":{"level":"off"}}
 
 class SDKTest(unittest.TestCase):
     def test_bundled_route(self):

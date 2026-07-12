@@ -20,15 +20,15 @@ import (
 	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/ultrasound"
 )
 
-const BenchmarkSchemaV1 = "bridge.benchmark.v1"
-const BenchmarkResultSchemaV1 = "bridge.benchmark.result.v1"
+const BenchmarkSchemaV1 = "bridge.benchmark.v2"
+const BenchmarkResultSchemaV1 = "bridge.benchmark.result.v2"
 
 type BenchmarkScenario struct {
 	SchemaVersion string          `json:"schema_version" yaml:"schema_version"`
 	Suite         SuiteSpec       `json:"suite" yaml:"suite"`
 	Execution     ExecutionSpec   `json:"execution" yaml:"execution"`
 	Algorithms    []string        `json:"algorithms" yaml:"algorithms"`
-	Observation   ObservationSpec `json:"observation,omitempty" yaml:"observation,omitempty"`
+	Observation   ObservationSpec `json:"observation_config,omitempty" yaml:"observation_config,omitempty"`
 	Output        OutputSpec      `json:"output,omitempty" yaml:"output,omitempty"`
 	Scenarios     []ScenarioCase  `json:"scenarios" yaml:"scenarios"`
 	Acceptance    AcceptanceSpec  `json:"acceptance,omitempty" yaml:"acceptance,omitempty"`
@@ -47,7 +47,7 @@ type ExecutionSpec struct {
 	RandomizeOrder bool    `json:"randomize_order,omitempty" yaml:"randomize_order,omitempty"`
 }
 type ObservationSpec struct {
-	Mode       string  `json:"mode,omitempty" yaml:"mode,omitempty"`
+	Mode       string  `json:"level,omitempty" yaml:"level,omitempty"`
 	SampleRate float64 `json:"sample_rate,omitempty" yaml:"sample_rate,omitempty"`
 }
 type OutputSpec struct {
@@ -70,30 +70,30 @@ type ScenarioCase struct {
 
 type QuerySpec struct {
 	ID       string  `json:"id" yaml:"id"`
-	Strategy string  `json:"strategy,omitempty" yaml:"strategy,omitempty"`
+	Strategy string  `json:"query_selection_method,omitempty" yaml:"query_selection_method,omitempty"`
 	Source   *uint32 `json:"source,omitempty" yaml:"source,omitempty"`
 	Target   *uint32 `json:"target,omitempty" yaml:"target,omitempty"`
 }
 type GeneratorSpec struct {
 	Generator     string  `json:"generator" yaml:"generator"`
-	Nodes         int     `json:"nodes,omitempty" yaml:"nodes,omitempty"`
+	Nodes         int     `json:"requested_node_count,omitempty" yaml:"requested_node_count,omitempty"`
 	Width         int     `json:"width,omitempty" yaml:"width,omitempty"`
 	Height        int     `json:"height,omitempty" yaml:"height,omitempty"`
 	Topology      string  `json:"topology,omitempty" yaml:"topology,omitempty"`
-	K             int     `json:"k,omitempty" yaml:"k,omitempty"`
-	Noise         float64 `json:"noise,omitempty" yaml:"noise,omitempty"`
-	Communities   int     `json:"communities,omitempty" yaml:"communities,omitempty"`
+	K             int     `json:"neighbor_candidate_count,omitempty" yaml:"neighbor_candidate_count,omitempty"`
+	Noise         float64 `json:"edge_weight_noise,omitempty" yaml:"edge_weight_noise,omitempty"`
+	Communities   int     `json:"community_count,omitempty" yaml:"community_count,omitempty"`
 	DatasetPath   string  `json:"dataset_path,omitempty" yaml:"dataset_path,omitempty"`
 	DatasetFormat string  `json:"dataset_format,omitempty" yaml:"dataset_format,omitempty"`
 }
 type EndpointSpec struct {
-	Strategy string  `json:"strategy" yaml:"strategy"`
+	Strategy string  `json:"query_selection_method" yaml:"query_selection_method"`
 	Source   *uint32 `json:"source,omitempty" yaml:"source,omitempty"`
 	Target   *uint32 `json:"target,omitempty" yaml:"target,omitempty"`
 }
 type RouteSpec struct {
-	Mode    core.RouteMode `json:"mode,omitempty" yaml:"mode,omitempty"`
-	Workers int            `json:"workers,omitempty" yaml:"workers,omitempty"`
+	Mode    core.RouteMode `json:"route_mode,omitempty" yaml:"route_mode,omitempty"`
+	Workers int            `json:"logical_worker_count,omitempty" yaml:"logical_worker_count,omitempty"`
 }
 type AblationSpec = core.AblationOptions
 
@@ -135,13 +135,13 @@ type CaseResult struct {
 	TargetKind           string                       `json:"target_kind"`
 	ExecutionPath        string                       `json:"execution_path"`
 	Runs                 int                          `json:"runs"`
-	FoundRate            float64                      `json:"found_rate"`
-	ExactRate            float64                      `json:"exact_rate"`
-	AverageDistance      float64                      `json:"average_distance"`
-	AverageWork          float64                      `json:"average_work"`
-	AverageTimeMS        float64                      `json:"average_time_ms"`
-	AverageSolverTimeMS  float64                      `json:"average_solver_time_ms"`
-	AverageEndToEndMS    float64                      `json:"average_end_to_end_time_ms"`
+	FoundRate            float64                      `json:"path_found_rate"`
+	ExactRate            float64                      `json:"optimality_proven_rate"`
+	AverageDistance      float64                      `json:"mean_path_cost"`
+	AverageWork          float64                      `json:"mean_work_actions"`
+	AverageTimeMS        float64                      `json:"mean_time_ms"`
+	AverageSolverTimeMS  float64                      `json:"mean_solver_time_ms"`
+	AverageEndToEndMS    float64                      `json:"mean_end_to_end_time_ms"`
 	MinDistance          *float64                     `json:"min_distance,omitempty"`
 	MaxDistance          *float64                     `json:"max_distance,omitempty"`
 	WorkStatistics       SummaryStatistics            `json:"work_statistics"`
@@ -179,11 +179,11 @@ func (s *BenchmarkScenario) ApplyDefaults() {
 			s.Scenarios[i].Graph.Topology = "open"
 		}
 		if len(s.Scenarios[i].Queries) == 0 && s.Scenarios[i].Endpoints.Strategy == "" {
-			s.Scenarios[i].Endpoints.Strategy = "opposite-corners"
+			s.Scenarios[i].Endpoints.Strategy = "generator_default_endpoints"
 		}
 		for q := range s.Scenarios[i].Queries {
 			if s.Scenarios[i].Queries[q].Strategy == "" {
-				s.Scenarios[i].Queries[q].Strategy = "opposite-corners"
+				s.Scenarios[i].Queries[q].Strategy = "generator_default_endpoints"
 			}
 		}
 		if s.Scenarios[i].Route.Mode == "" {
@@ -222,7 +222,7 @@ func (s BenchmarkScenario) Validate() error {
 	switch s.Observation.Mode {
 	case "off", "summary", "trace", "profile":
 	default:
-		return fmt.Errorf("observation.mode must be one of off, summary, trace, profile")
+		return fmt.Errorf("observation_config.level must be one of off, summary, trace, profile")
 	}
 	if s.Observation.SampleRate <= 0 || s.Observation.SampleRate > 1 {
 		return errors.New("observation.sample_rate must be > 0 and <= 1")
@@ -231,7 +231,7 @@ func (s BenchmarkScenario) Validate() error {
 		return errors.New("output.output_dir is required when output.save_raw_results or output.save_trace is enabled")
 	}
 	if s.Output.SaveTrace && s.Observation.Mode == "off" {
-		return errors.New("observation.mode must not be off when output.save_trace is enabled")
+		return errors.New("observation_config.level must not be off when output.save_trace is enabled")
 	}
 	for _, c := range s.Scenarios {
 		if c.Ablation.DisableDetour || c.Ablation.DisableBudgetReallocation || c.Ablation.DisableStateReuse {
@@ -268,10 +268,10 @@ func (s BenchmarkScenario) Validate() error {
 			}
 		case "community", "maze", "adversarial":
 			if c.Graph.Nodes < 4 {
-				return fmt.Errorf("scenario %q: graph.nodes must be >= 4", c.ID)
+				return fmt.Errorf("scenario %q: graph.requested_node_count must be >= 4", c.ID)
 			}
 			if c.Graph.Generator == "community" && c.Graph.Communities < 0 {
-				return fmt.Errorf("scenario %q: graph.communities must be >= 0", c.ID)
+				return fmt.Errorf("scenario %q: graph.community_count must be >= 0", c.ID)
 			}
 		case "dataset":
 			if c.Graph.DatasetPath == "" {
@@ -297,13 +297,13 @@ func (s BenchmarkScenario) Validate() error {
 				return fmt.Errorf("scenario %q: duplicate query id %q", c.ID, q.ID)
 			}
 			queryIDs[q.ID] = true
-			if q.Strategy != "opposite-corners" && q.Strategy != "explicit" {
-				return fmt.Errorf("scenario %q query %q: unsupported query strategy", c.ID, q.ID)
+			if q.Strategy != "generator_default_endpoints" && q.Strategy != "explicit_endpoints" {
+				return fmt.Errorf("scenario %q query %q: unsupported query_selection_method", c.ID, q.ID)
 			}
-			if q.Strategy == "explicit" && (q.Source == nil || q.Target == nil) {
-				return fmt.Errorf("scenario %q query %q: explicit query requires source and target", c.ID, q.ID)
+			if q.Strategy == "explicit_endpoints" && (q.Source == nil || q.Target == nil) {
+				return fmt.Errorf("scenario %q query %q: explicit_endpoints requires source and target", c.ID, q.ID)
 			}
-			if q.Strategy == "explicit" && (int(*q.Source) >= nodeCount || int(*q.Target) >= nodeCount) {
+			if q.Strategy == "explicit_endpoints" && (int(*q.Source) >= nodeCount || int(*q.Target) >= nodeCount) {
 				return fmt.Errorf("scenario %q query %q: endpoint is outside graph node range 0..%d", c.ID, q.ID, nodeCount-1)
 			}
 		}
@@ -313,7 +313,7 @@ func (s BenchmarkScenario) Validate() error {
 			return fmt.Errorf("scenario %q: unsupported route mode %q", c.ID, c.Route.Mode)
 		}
 		if c.Route.Workers < 1 {
-			return fmt.Errorf("scenario %q: route.workers must be >= 1", c.ID)
+			return fmt.Errorf("scenario %q: route.logical_worker_count must be >= 1", c.ID)
 		}
 		if c.Budget.TotalWork != nil && *c.Budget.TotalWork == 0 {
 			return fmt.Errorf("scenario %q: budget.total_work must be > 0", c.ID)
@@ -322,7 +322,7 @@ func (s BenchmarkScenario) Validate() error {
 			return fmt.Errorf("scenario %q: budget.timeout_ms must be > 0", c.ID)
 		}
 		if c.Graph.Noise < 0 {
-			return fmt.Errorf("scenario %q: graph.noise must be >= 0", c.ID)
+			return fmt.Errorf("scenario %q: graph.edge_weight_noise must be >= 0", c.ID)
 		}
 	}
 	if s.Acceptance.AverageWorkMax != nil && *s.Acceptance.AverageWorkMax < 0 {
@@ -392,13 +392,13 @@ func validateGridGraphSpec(id string, spec GeneratorSpec) error {
 		hasNodes := spec.Nodes > 0
 		hasDimensions := spec.Width > 0 || spec.Height > 0
 		if hasNodes && hasDimensions {
-			return fmt.Errorf("scenario %q: use graph.nodes or width/height, not both", id)
+			return fmt.Errorf("scenario %q: use graph.requested_node_count or width/height, not both", id)
 		}
 		if !hasNodes && (spec.Width < 1 || spec.Height < 1) {
-			return fmt.Errorf("scenario %q: graph.nodes must be >= 2 or both width and height provided", id)
+			return fmt.Errorf("scenario %q: graph.requested_node_count must be >= 2 or both width and height provided", id)
 		}
 		if hasNodes && spec.Nodes < 2 {
-			return fmt.Errorf("scenario %q: graph.nodes must be >= 2", id)
+			return fmt.Errorf("scenario %q: graph.requested_node_count must be >= 2", id)
 		}
 	default:
 		switch spec.Topology {
@@ -407,10 +407,10 @@ func validateGridGraphSpec(id string, spec GeneratorSpec) error {
 			return fmt.Errorf("scenario %q: unsupported topology %q", id, spec.Topology)
 		}
 		if spec.Nodes < 2 {
-			return fmt.Errorf("scenario %q: graph.nodes must be >= 2", id)
+			return fmt.Errorf("scenario %q: graph.requested_node_count must be >= 2", id)
 		}
 		if spec.Width > 0 || spec.Height > 0 {
-			return fmt.Errorf("scenario %q: non-open grid topology requires graph.nodes and does not support width/height", id)
+			return fmt.Errorf("scenario %q: non-open grid topology requires graph.requested_node_count and does not support width/height", id)
 		}
 	}
 	return nil
@@ -418,7 +418,7 @@ func validateGridGraphSpec(id string, spec GeneratorSpec) error {
 
 func validateRandomGeometricSpec(id string, spec GeneratorSpec) error {
 	if spec.Nodes < 2 {
-		return fmt.Errorf("scenario %q: graph.nodes must be >= 2", id)
+		return fmt.Errorf("scenario %q: graph.requested_node_count must be >= 2", id)
 	}
 	if spec.Width > 0 || spec.Height > 0 {
 		return fmt.Errorf("scenario %q: random_geometric does not support width/height", id)
@@ -427,7 +427,7 @@ func validateRandomGeometricSpec(id string, spec GeneratorSpec) error {
 		return fmt.Errorf("scenario %q: random_geometric does not support topology %q", id, spec.Topology)
 	}
 	if spec.K < 0 {
-		return fmt.Errorf("scenario %q: graph.k must be >= 0", id)
+		return fmt.Errorf("scenario %q: graph.neighbor_candidate_count must be >= 0", id)
 	}
 	return nil
 }
@@ -480,9 +480,9 @@ type RawRunResult struct {
 	Repetition               int                       `json:"repetition"`
 	Warmup                   bool                      `json:"warmup"`
 	Path                     []core.NodeID             `json:"path,omitempty"`
-	Found                    bool                      `json:"found"`
-	Exact                    bool                      `json:"exact"`
-	Distance                 *float64                  `json:"distance,omitempty"`
+	Found                    bool                      `json:"path_found"`
+	Exact                    bool                      `json:"optimality_proven"`
+	Distance                 *float64                  `json:"path_cost,omitempty"`
 	Work                     core.WorkMetrics          `json:"work"`
 	TimeBreakdown            core.TimeBreakdown        `json:"time_breakdown"`
 	SystemMetrics            core.SystemMetrics        `json:"system_metrics"`
@@ -494,11 +494,11 @@ type RawRunResult struct {
 	Graph                    GraphMetadata             `json:"graph"`
 	Query                    QueryMetadata             `json:"query"`
 	Quality                  QualityMetadata           `json:"quality"`
-	Observation              *gate.ObservationResult   `json:"observation,omitempty"`
+	Observation              *gate.ObservationResult   `json:"observation_data,omitempty"`
 	ObservationOverheadRatio float64                   `json:"observation_overhead_ratio,omitempty"`
 	FailureReason            string                    `json:"failure_reason,omitempty"`
-	TimeToFirstPathMS        *float64                  `json:"time_to_first_path_ms,omitempty"`
-	TimeToBestFoundMS        *float64                  `json:"time_to_best_found_ms,omitempty"`
+	TimeToFirstPathMS        *float64                  `json:"first_path_elapsed_ms,omitempty"`
+	TimeToBestFoundMS        *float64                  `json:"best_path_elapsed_ms,omitempty"`
 	ImprovementCount         uint64                    `json:"improvement_count"`
 	BridgeOverheadRatio      float64                   `json:"bridge_overhead_ratio,omitempty"`
 	DuplicatedWorkRatio      float64                   `json:"duplicated_work_ratio,omitempty"`
@@ -608,13 +608,13 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			return out, err
 		}
 		var source, target uint32
-		if query.Strategy == "explicit" {
+		if query.Strategy == "explicit_endpoints" {
 			source, target = *query.Source, *query.Target
 		} else {
 			source, target = uint32(defaultSource), uint32(defaultTarget)
 		}
 		requestID := fmt.Sprintf("%s-%s-%d-%s-%d", c.ID, algorithm, seed, query.ID, rep)
-		req := gate.RouteRequest{SchemaVersion: gate.RouteRequestSchemaV1, RequestID: requestID, Graph: graphToInput(g), Route: gate.RouteInput{Source: source, Target: target, Mode: c.Route.Mode, Workers: c.Route.Workers, Seed: uint64(seed)}, Budget: gate.BudgetInput{TotalWork: c.Budget.TotalWork, TimeoutMS: c.Budget.TimeoutMS}, Observation: gate.ObservationInput{Mode: gate.ObservationMode(s.Observation.Mode)}, Ablation: c.Ablation}
+		req := gate.RouteRequest{SchemaVersion: gate.RouteRequestSchemaV1, RequestID: requestID, Graph: graphToInput(g), Route: gate.RouteInput{Source: source, Target: target, Mode: c.Route.Mode, Workers: c.Route.Workers, Seed: uint64(seed)}, Budget: gate.BudgetInput{TotalWork: c.Budget.TotalWork, TimeoutMS: c.Budget.TimeoutMS}, Observation: gate.ObservationInput{Mode: gate.ObservationMode(s.Observation.Mode), SampleRate: &s.Observation.SampleRate}, Ablation: c.Ablation}
 		runCtx := ctx
 		cancel := func() {}
 		if timeout > 0 {

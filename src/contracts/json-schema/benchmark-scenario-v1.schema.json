@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bridge.local/schemas/benchmark-scenario-v1.schema.json",
-  "title": "BRIDGE Benchmark Scenario v1",
+  "$id": "https://bridge.local/schemas/benchmark-scenario-v2.schema.json",
+  "title": "BRIDGE Benchmark Scenario v2",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -13,7 +13,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.benchmark.v1"
+      "const": "bridge.benchmark.v2"
     },
     "suite": {
       "type": "object",
@@ -78,11 +78,11 @@
         ]
       }
     },
-    "observation": {
+    "observation_config": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "mode": {
+        "level": {
           "enum": [
             "off",
             "summary",
@@ -135,12 +135,12 @@
           "minimum": 0,
           "maximum": 1
         },
-        "exact_rate_min": {
+        "optimality_proven_rate_min": {
           "type": "number",
           "minimum": 0,
           "maximum": 1
         },
-        "average_work_max": {
+        "mean_work_actions_max": {
           "type": "number",
           "minimum": 0
         }
@@ -166,10 +166,10 @@
           "type": "string",
           "minLength": 1
         },
-        "strategy": {
+        "query_selection_method": {
           "enum": [
-            "opposite-corners",
-            "explicit"
+            "generator_default_endpoints",
+            "explicit_endpoints"
           ]
         },
         "source": {
@@ -208,7 +208,7 @@
                 "dataset"
               ]
             },
-            "nodes": {
+            "requested_node_count": {
               "type": "integer",
               "minimum": 2
             },
@@ -229,15 +229,15 @@
                 "disconnected"
               ]
             },
-            "k": {
+            "neighbor_candidate_count": {
               "type": "integer",
               "minimum": 0
             },
-            "noise": {
+            "edge_weight_noise": {
               "type": "number",
               "minimum": 0
             },
-            "communities": {
+            "community_count": {
               "type": "integer",
               "minimum": 0
             },
@@ -256,10 +256,10 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "strategy": {
+            "query_selection_method": {
               "enum": [
-                "opposite-corners",
-                "explicit"
+                "generator_default_endpoints",
+                "explicit_endpoints"
               ]
             },
             "source": {
@@ -283,7 +283,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
-            "mode": {
+            "route_mode": {
               "enum": [
                 "fast",
                 "balanced",
@@ -291,7 +291,7 @@
                 "exact"
               ]
             },
-            "workers": {
+            "logical_worker_count": {
               "type": "integer",
               "minimum": 1
             }

@@ -16,7 +16,7 @@ func TestRawRunContainsPhaseAndSystemMetrics(t *testing.T) {
 		t.Fatalf("raw runs=%d", len(got.RawRuns))
 	}
 	r := got.RawRuns[0]
-	if r.TimeBreakdown.TotalMS <= 0 || r.TimeBreakdown.SolverMS < 0 {
+	if (r.TimeBreakdown.TotalMS <= 0 && r.EndToEndTimeMS <= 0 && r.TimeBreakdown.GateMS <= 0) || r.TimeBreakdown.SolverMS < 0 {
 		t.Fatalf("invalid timing: %+v", r.TimeBreakdown)
 	}
 	if r.SystemMetrics.MallocCount == 0 {

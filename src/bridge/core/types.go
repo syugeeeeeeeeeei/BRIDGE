@@ -112,13 +112,13 @@ type AblationOptions struct {
 type RouteRequest struct {
 	Source           NodeID          `json:"source"`
 	Target           NodeID          `json:"target"`
-	Mode             RouteMode       `json:"mode"`
+	Mode             RouteMode       `json:"route_mode"`
 	MaxSuboptimality *float64        `json:"max_suboptimality,omitempty"`
 	Deadline         time.Duration   `json:"-"`
 	DeadlineMS       *float64        `json:"deadline_ms,omitempty"`
 	WorkBudget       *uint64         `json:"work_budget,omitempty"`
 	MemoryBudgetKiB  *float64        `json:"memory_budget_kib,omitempty"`
-	Workers          int             `json:"workers"`
+	Workers          int             `json:"logical_worker_count"`
 	Seed             uint64          `json:"seed"`
 	AnchorStrategy   string          `json:"-"`
 	Ablation         AblationOptions `json:"ablation,omitempty"`
@@ -143,7 +143,7 @@ func (r RouteRequest) Validate(g Graph) error {
 		return errors.New("deadline_ms must be positive")
 	}
 	if r.Workers < 1 {
-		return errors.New("workers must be >= 1")
+		return errors.New("logical_worker_count must be >= 1")
 	}
 	return nil
 }
@@ -200,7 +200,7 @@ type WorkMetrics struct {
 	TerminateActions uint64 `json:"terminate_actions"`
 	LogicalSteps     uint64 `json:"logical_steps"`
 	ScheduledSteps   uint64 `json:"scheduled_steps"`
-	WorkerCount      uint32 `json:"worker_count"`
+	WorkerCount      uint32 `json:"logical_worker_count"`
 }
 
 func (w *WorkMetrics) AddAction(kind string) {
@@ -324,34 +324,36 @@ type BudgetLedger struct {
 }
 
 type RouteResult struct {
-	Path              []NodeID       `json:"path"`
-	Distance          float64        `json:"distance"`
-	Found             bool           `json:"found"`
-	Exact             bool           `json:"exact"`
-	SolverName        string         `json:"solver_name"`
-	Work              WorkMetrics    `json:"work"`
-	WorkRelaxations   uint64         `json:"work_relaxations"`
-	WorkExpandedNodes uint64         `json:"work_expanded_nodes"`
-	QueuePushes       uint64         `json:"queue_pushes"`
-	QueuePops         uint64         `json:"queue_pops"`
-	ParallelSteps     uint64         `json:"parallel_steps"`
-	TimeMS            float64        `json:"time_ms"`
-	TimeBreakdown     TimeBreakdown  `json:"time_breakdown"`
-	LowerBound        float64        `json:"lower_bound"`
-	CertifiedRatio    *float64       `json:"certified_ratio,omitempty"`
-	QualityCertified  bool           `json:"quality_certified"`
-	FirstPathWork     *uint64        `json:"first_path_work,omitempty"`
-	FallbackUsed      bool           `json:"fallback_used"`
-	BudgetExhausted   bool           `json:"budget_exhausted"`
-	DeadlineExceeded  bool           `json:"deadline_exceeded"`
-	ErrorCode         ErrorCode      `json:"error_code,omitempty"`
-	SolverTrace       []TaskTrace    `json:"solver_trace,omitempty"`
-	Telemetry         map[string]any `json:"telemetry,omitempty"`
-	FailureReason     string         `json:"failure_reason,omitempty"`
-	TimeToFirstPathMS *float64       `json:"time_to_first_path_ms,omitempty"`
-	TimeToBestFoundMS *float64       `json:"time_to_best_found_ms,omitempty"`
-	ImprovementCount  uint64         `json:"improvement_count"`
-	BudgetLedger      *BudgetLedger  `json:"budget_ledger,omitempty"`
+	Path               []NodeID       `json:"path"`
+	Distance           float64        `json:"path_cost"`
+	Found              bool           `json:"path_found"`
+	SearchCompleted    bool           `json:"search_completed"`
+	ReachabilityProven bool           `json:"reachability_proven"`
+	Exact              bool           `json:"optimality_proven"`
+	SolverName         string         `json:"solver_name"`
+	Work               WorkMetrics    `json:"work"`
+	WorkRelaxations    uint64         `json:"work_relaxations"`
+	WorkExpandedNodes  uint64         `json:"work_expanded_nodes"`
+	QueuePushes        uint64         `json:"queue_pushes"`
+	QueuePops          uint64         `json:"queue_pops"`
+	ParallelSteps      uint64         `json:"parallel_steps"`
+	TimeMS             float64        `json:"end_to_end_time_ms"`
+	TimeBreakdown      TimeBreakdown  `json:"time_breakdown"`
+	LowerBound         float64        `json:"lower_bound"`
+	CertifiedRatio     *float64       `json:"proven_cost_ratio,omitempty"`
+	QualityCertified   bool           `json:"quality_bound_proven"`
+	FirstPathWork      *uint64        `json:"first_path_work,omitempty"`
+	FallbackUsed       bool           `json:"fallback_used"`
+	BudgetExhausted    bool           `json:"budget_exhausted"`
+	DeadlineExceeded   bool           `json:"deadline_exceeded"`
+	ErrorCode          ErrorCode      `json:"error_code,omitempty"`
+	SolverTrace        []TaskTrace    `json:"solver_trace,omitempty"`
+	Telemetry          map[string]any `json:"telemetry,omitempty"`
+	FailureReason      string         `json:"failure_reason,omitempty"`
+	TimeToFirstPathMS  *float64       `json:"first_path_elapsed_ms,omitempty"`
+	TimeToBestFoundMS  *float64       `json:"best_path_elapsed_ms,omitempty"`
+	ImprovementCount   uint64         `json:"improvement_count"`
+	BudgetLedger       *BudgetLedger  `json:"budget_ledger,omitempty"`
 }
 
 func (r RouteResult) TotalWork() uint64 { return r.Work.TotalActions }

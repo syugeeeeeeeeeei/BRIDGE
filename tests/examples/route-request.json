@@ -1,5 +1,5 @@
 {
-  "schema_version": "bridge.route.v1",
+  "schema_version": "bridge.route.request.v2",
   "request_id": "request-001",
   "graph": {
     "type": "inline",
@@ -31,13 +31,13 @@
   "route": {
     "source": 0,
     "target": 2,
-    "mode": "balanced"
+    "route_mode": "balanced"
   },
   "budget": {
     "total_work": 100000,
     "timeout_ms": 5000
   },
-  "observation": {
-    "mode": "off"
+  "observation_config": {
+    "level": "off"
   }
 }

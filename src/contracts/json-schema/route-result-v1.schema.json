@@ -1,23 +1,23 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bridge.local/schemas/route-result-v1.schema.json",
-  "title": "BRIDGE Route Result v1",
+  "$id": "https://bridge.local/schemas/route-result-v2.schema.json",
+  "title": "BRIDGE Route Result v2",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "schema_version",
     "status",
-    "found",
+    "path_found",
     "path",
-    "exact",
+    "optimality_proven",
     "work",
-    "time_ms",
+    "end_to_end_time_ms",
     "solver_time_ms",
     "time_breakdown"
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.route.result.v1"
+      "const": "bridge.route.result.v2"
     },
     "request_id": {
       "type": "string"
@@ -30,10 +30,10 @@
         "timeout"
       ]
     },
-    "found": {
+    "path_found": {
       "type": "boolean"
     },
-    "distance": {
+    "path_cost": {
       "type": "number",
       "minimum": 0
     },
@@ -44,7 +44,13 @@
         "minimum": 0
       }
     },
-    "exact": {
+    "search_completed": {
+      "type": "boolean"
+    },
+    "reachability_proven": {
+      "type": "boolean"
+    },
+    "optimality_proven": {
       "type": "boolean"
     },
     "solver_name": {
@@ -53,23 +59,23 @@
     "work": {
       "type": "object"
     },
-    "time_ms": {
+    "end_to_end_time_ms": {
       "type": "number",
       "minimum": 0
     },
     "error_code": {
       "type": "string"
     },
-    "observation": {
+    "observation_data": {
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "mode",
+        "level",
         "event_count",
         "truncated"
       ],
       "properties": {
-        "mode": {
+        "level": {
           "enum": [
             "off",
             "summary",
@@ -103,14 +109,14 @@
     {
       "if": {
         "properties": {
-          "found": {
+          "path_found": {
             "const": true
           }
         }
       },
       "then": {
         "required": [
-          "distance"
+          "path_cost"
         ]
       }
     }

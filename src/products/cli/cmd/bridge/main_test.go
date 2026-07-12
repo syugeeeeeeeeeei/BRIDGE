@@ -19,7 +19,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestRouteStdin(t *testing.T) {
-	req := `{"schema_version":"bridge.route.v1","graph":{"type":"inline","nodes":[{"id":0},{"id":1}],"edges":[{"from":0,"to":1,"weight":1}]},"route":{"source":0,"target":1}}`
+	req := `{"schema_version":"bridge.route.request.v2","graph":{"type":"inline","nodes":[{"id":0},{"id":1}],"edges":[{"from":0,"to":1,"weight":1}]},"route":{"source":0,"target":1}}`
 	var out, errOut bytes.Buffer
 	if code := run([]string{"route"}, strings.NewReader(req), &out, &errOut); code != 0 {
 		t.Fatalf("code=%d err=%s", code, errOut.String())
@@ -32,7 +32,7 @@ func TestRouteStdin(t *testing.T) {
 func TestBenchmarkValidateRejectsInvalidScenario(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.json")
-	data := `{"schema_version":"bridge.benchmark.v1","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":2},"algorithms":["bridge"],"observation":{"mode":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","nodes":5,"topology":"open"},"endpoints":{"strategy":"opposite-corners"}}]}`
+	data := `{"schema_version":"bridge.benchmark.v2","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":2},"algorithms":["bridge"],"observation_config":{"level":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}]}`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +45,7 @@ func TestBenchmarkValidateRejectsInvalidScenario(t *testing.T) {
 func TestBenchmarkRunAcceptanceExitCode(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "fail.json")
-	data := `{"schema_version":"bridge.benchmark.v1","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":1},"algorithms":["bridge"],"observation":{"mode":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","nodes":5,"topology":"open"},"endpoints":{"strategy":"opposite-corners"}}],"acceptance":{"average_work_max":0}}`
+	data := `{"schema_version":"bridge.benchmark.v2","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":1},"algorithms":["bridge"],"observation_config":{"level":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}],"acceptance":{"average_work_max":0}}`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestBenchmarkRunAcceptanceExitCode(t *testing.T) {
 func TestRouteTraceOutput(t *testing.T) {
 	dir := t.TempDir()
 	trace := filepath.Join(dir, "trace.jsonl")
-	req := `{"schema_version":"bridge.route.v1","graph":{"type":"inline","nodes":[{"id":0},{"id":1}],"edges":[{"from":0,"to":1,"weight":1}]},"route":{"source":0,"target":1},"observation":{"mode":"trace"}}`
+	req := `{"schema_version":"bridge.route.request.v2","graph":{"type":"inline","nodes":[{"id":0},{"id":1}],"edges":[{"from":0,"to":1,"weight":1}]},"route":{"source":0,"target":1},"observation_config":{"level":"trace"}}`
 	var out, errOut bytes.Buffer
 	if code := run([]string{"route", "--trace-output", trace}, strings.NewReader(req), &out, &errOut); code != 0 {
 		t.Fatalf("code=%d err=%s", code, errOut.String())
@@ -73,7 +73,7 @@ func TestRouteTraceOutput(t *testing.T) {
 	if len(bytes.TrimSpace(b)) == 0 {
 		t.Fatal("trace file is empty")
 	}
-	if !strings.Contains(out.String(), `"observation"`) {
+	if !strings.Contains(out.String(), `"observation_data"`) {
 		t.Fatalf("out=%s", out.String())
 	}
 }
@@ -83,7 +83,7 @@ func TestRouteDoesNotCreateTraceImplicitly(t *testing.T) {
 	old, _ := os.Getwd()
 	_ = os.Chdir(dir)
 	defer os.Chdir(old)
-	req := `{"schema_version":"bridge.route.v1","graph":{"type":"inline","nodes":[{"id":0},{"id":1}],"edges":[{"from":0,"to":1,"weight":1}]},"route":{"source":0,"target":1},"observation":{"mode":"trace"}}`
+	req := `{"schema_version":"bridge.route.request.v2","graph":{"type":"inline","nodes":[{"id":0},{"id":1}],"edges":[{"from":0,"to":1,"weight":1}]},"route":{"source":0,"target":1},"observation_config":{"level":"trace"}}`
 	var out, errOut bytes.Buffer
 	if code := run([]string{"route"}, strings.NewReader(req), &out, &errOut); code != 0 {
 		t.Fatalf("code=%d err=%s", code, errOut.String())
