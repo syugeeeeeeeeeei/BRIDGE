@@ -181,7 +181,7 @@ func (s Solver) Solve(ctx context.Context, g core.Graph, r core.RouteRequest, b 
 	if res.Telemetry == nil {
 		res.Telemetry = map[string]any{}
 	}
-	res.Telemetry["strategy"] = "staged_anchor_with_bounded_connector"
+	res.Telemetry["anchor_strategy"] = "staged_anchor_with_bounded_connector"
 	res.Telemetry["initial_expand_target"] = initial
 	res.Telemetry["max_expand_limit"] = maxExpand
 	return finalizeTiming(res, "anchor")
@@ -352,7 +352,7 @@ func discreteAnytimeSearch(ctx context.Context, g core.Graph, r core.RouteReques
 				}
 				remainingWork = &v
 			}
-			emit("connector_started", map[string]any{"from": from, "current": u, "to": r.Target, "expand_budget": connectorCap, "call": connectorCalls, "strategy": strategy})
+			emit("connector_started", map[string]any{"from": from, "current": u, "to": r.Target, "expand_budget": connectorCap, "call": connectorCalls, "anchor_strategy": strategy})
 			cr := connector.Solve(ctx, g, core.RouteRequest{Source: from, Target: r.Target, Mode: r.Mode, Workers: maxInt(1, r.Workers), Seed: r.Seed}, core.WorkBudget{MaxWork: remainingWork, MaxExpand: &connectorCap}, o)
 			metrics.Add(cr.Work)
 			relax += cr.WorkRelaxations

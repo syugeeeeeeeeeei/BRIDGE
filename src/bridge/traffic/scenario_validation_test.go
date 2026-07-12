@@ -3,7 +3,7 @@ package traffic
 import "testing"
 
 func validScenario() BenchmarkScenario {
-	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "test"}, Execution: ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1}, Algorithms: []string{"bridge"}, Observation: ObservationSpec{Mode: "off"}, Scenarios: []ScenarioCase{{ID: "case", Graph: GeneratorSpec{Generator: "grid", Nodes: 5, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "opposite-corners"}}}}
+	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "test"}, Execution: ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1}, Algorithms: []string{"bridge"}, Observation: ObservationSpec{Mode: "off"}, Scenarios: []ScenarioCase{{ID: "case", Graph: GeneratorSpec{Generator: "grid", Nodes: 5, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}}}}
 	s.ApplyDefaults()
 	return s
 }
@@ -57,7 +57,7 @@ func TestScenarioValidationRejectsBadObservation(t *testing.T) {
 func TestScenarioValidationRejectsOutOfRangeEndpoint(t *testing.T) {
 	s := validScenario()
 	source, target := uint32(0), uint32(9)
-	s.Scenarios[0].Endpoints = EndpointSpec{Strategy: "explicit", Source: &source, Target: &target}
+	s.Scenarios[0].Endpoints = EndpointSpec{Strategy: "explicit_endpoints", Source: &source, Target: &target}
 	if err := s.Validate(); err == nil {
 		t.Fatal("expected error")
 	}
@@ -104,3 +104,4 @@ func TestScenarioValidationRejectsRawOutputWithoutDir(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+

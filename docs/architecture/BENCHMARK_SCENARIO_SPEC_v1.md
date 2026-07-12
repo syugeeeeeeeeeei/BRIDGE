@@ -1,6 +1,6 @@
 # Benchmark Scenario / Result v1 仕様
 
-**Schema:** `bridge.benchmark.v1` / `bridge.benchmark.result.v1`  
+**Schema:** `bridge.benchmark.v2` / `bridge.benchmark.result.v2`  
 **状態:** v0.14.1研究基盤向けドラフト。v1文字列を維持した破壊的更新を許容する。
 
 ## 1. 実験単位
@@ -23,7 +23,7 @@
 
 `scenarios[].queries[]` は `id` とselectorを持つ。現在のselectorは次の二つである。
 
-- `opposite-corners`: generatorが返す既定source/targetを使用する。
+- `generator_default_endpoints`: generatorが返す既定source/targetを使用する。
 - `explicit`: `source` と `target` を明示する。
 
 旧`endpoints`は単一query用の互換入力として受理し、内部では`query_id=default`へ正規化する。

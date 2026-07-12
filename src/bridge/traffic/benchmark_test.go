@@ -54,3 +54,4 @@ func TestConstructionOrderDoesNotChangeRoute(t *testing.T) {
 		t.Fatalf("construction order changed result: %s != %s; paths=%v %v", da, db, a.Path, b.Path)
 	}
 }
+

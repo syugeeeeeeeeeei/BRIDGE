@@ -5,8 +5,8 @@ import (
 	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/traffic"
 )
 
-const ProfileSchemaV1 = "bridge.health-profile.v1"
-const ResultSchemaV1 = "bridge.health-check.v1"
+const ProfileSchemaV1 = "bridge.health.profile.v2"
+const ResultSchemaV1 = "bridge.health.result.v2"
 
 type Status string
 
@@ -78,7 +78,7 @@ type RunValidation struct {
 	Status    Status          `json:"status"`
 	Path      PathValidation  `json:"path"`
 	Work      WorkValidation  `json:"work"`
-	Exact     ExactValidation `json:"exact"`
+	Exact     ExactValidation `json:"optimality_validation"`
 }
 type PairedComparison struct {
 	PairKey            string   `json:"pair_key"`

@@ -102,9 +102,9 @@ type BudgetSpec struct {
 	TimeoutMS *float64 `json:"timeout_ms,omitempty" yaml:"timeout_ms,omitempty"`
 }
 type AcceptanceSpec struct {
-	FoundRateMin   *float64 `json:"found_rate_min,omitempty" yaml:"found_rate_min,omitempty"`
-	ExactRateMin   *float64 `json:"exact_rate_min,omitempty" yaml:"exact_rate_min,omitempty"`
-	AverageWorkMax *float64 `json:"average_work_max,omitempty" yaml:"average_work_max,omitempty"`
+	FoundRateMin   *float64 `json:"path_found_rate_min,omitempty" yaml:"path_found_rate_min,omitempty"`
+	ExactRateMin   *float64 `json:"optimality_proven_rate_min,omitempty" yaml:"optimality_proven_rate_min,omitempty"`
+	AverageWorkMax *float64 `json:"mean_work_actions_max,omitempty" yaml:"mean_work_actions_max,omitempty"`
 }
 
 type BenchmarkResult struct {
@@ -326,9 +326,9 @@ func (s BenchmarkScenario) Validate() error {
 		}
 	}
 	if s.Acceptance.AverageWorkMax != nil && *s.Acceptance.AverageWorkMax < 0 {
-		return errors.New("acceptance.average_work_max must be >= 0")
+		return errors.New("acceptance.mean_work_actions_max must be >= 0")
 	}
-	for name, v := range map[string]*float64{"found_rate_min": s.Acceptance.FoundRateMin, "exact_rate_min": s.Acceptance.ExactRateMin} {
+	for name, v := range map[string]*float64{"path_found_rate_min": s.Acceptance.FoundRateMin, "optimality_proven_rate_min": s.Acceptance.ExactRateMin} {
 		if v != nil && (*v < 0 || *v > 1) {
 			return fmt.Errorf("acceptance.%s must be between 0 and 1", name)
 		}
@@ -817,8 +817,8 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		acc.metrics["alloc_bytes"] = append(acc.metrics["alloc_bytes"], float64(raw.SystemMetrics.AllocBytes))
 		acc.metrics["malloc_count"] = append(acc.metrics["malloc_count"], float64(raw.SystemMetrics.MallocCount))
 		acc.metrics["gc_count"] = append(acc.metrics["gc_count"], float64(raw.SystemMetrics.GCCount))
-		acc.metrics["time_to_first_path_ms"] = appendOptional(acc.metrics["time_to_first_path_ms"], raw.TimeToFirstPathMS)
-		acc.metrics["time_to_best_found_ms"] = appendOptional(acc.metrics["time_to_best_found_ms"], raw.TimeToBestFoundMS)
+		acc.metrics["first_path_elapsed_ms"] = appendOptional(acc.metrics["first_path_elapsed_ms"], raw.TimeToFirstPathMS)
+		acc.metrics["best_path_elapsed_ms"] = appendOptional(acc.metrics["best_path_elapsed_ms"], raw.TimeToBestFoundMS)
 		acc.metrics["improvement_count"] = append(acc.metrics["improvement_count"], float64(raw.ImprovementCount))
 		acc.metrics["bridge_overhead_ratio"] = append(acc.metrics["bridge_overhead_ratio"], raw.BridgeOverheadRatio)
 		acc.metrics["duplicated_work_ratio"] = append(acc.metrics["duplicated_work_ratio"], raw.DuplicatedWorkRatio)
@@ -853,15 +853,15 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		out.Cases = append(out.Cases, *r)
 		if s.Acceptance.FoundRateMin != nil && r.FoundRate < *s.Acceptance.FoundRateMin {
 			out.Passed = false
-			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s found_rate %.6f < %.6f", r.ScenarioID, r.Algorithm, r.FoundRate, *s.Acceptance.FoundRateMin))
+			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s path_found_rate %.6f < %.6f", r.ScenarioID, r.Algorithm, r.FoundRate, *s.Acceptance.FoundRateMin))
 		}
 		if s.Acceptance.ExactRateMin != nil && r.ExactRate < *s.Acceptance.ExactRateMin {
 			out.Passed = false
-			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s exact_rate %.6f < %.6f", r.ScenarioID, r.Algorithm, r.ExactRate, *s.Acceptance.ExactRateMin))
+			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s optimality_proven_rate %.6f < %.6f", r.ScenarioID, r.Algorithm, r.ExactRate, *s.Acceptance.ExactRateMin))
 		}
 		if s.Acceptance.AverageWorkMax != nil && r.AverageWork > *s.Acceptance.AverageWorkMax {
 			out.Passed = false
-			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s average_work %.3f > %.3f", r.ScenarioID, r.Algorithm, r.AverageWork, *s.Acceptance.AverageWorkMax))
+			out.Failures = append(out.Failures, fmt.Sprintf("%s/%s mean_work_actions %.3f > %.3f", r.ScenarioID, r.Algorithm, r.AverageWork, *s.Acceptance.AverageWorkMax))
 		}
 	}
 	sort.Slice(out.Cases, func(i, j int) bool {
@@ -940,9 +940,9 @@ func rawRunStableDigest(raw RawRunResult) string {
 		Algorithm  string           `json:"algorithm"`
 		QueryID    string           `json:"query_id"`
 		Seed       int64            `json:"seed"`
-		Found      bool             `json:"found"`
-		Exact      bool             `json:"exact"`
-		Distance   *float64         `json:"distance,omitempty"`
+		Found      bool             `json:"path_found"`
+		Exact      bool             `json:"optimality_proven"`
+		Distance   *float64         `json:"path_cost,omitempty"`
 		Work       core.WorkMetrics `json:"work"`
 		ErrorCode  core.ErrorCode   `json:"error_code,omitempty"`
 	}{raw.ScenarioID, raw.Algorithm, raw.QueryID, raw.Seed, raw.Found, raw.Exact, raw.Distance, raw.Work, raw.ErrorCode}

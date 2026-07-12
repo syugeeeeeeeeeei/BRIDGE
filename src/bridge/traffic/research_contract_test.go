@@ -14,7 +14,7 @@ func TestResearchScenarioExpandsQueriesWarmupsAndRawRuns(t *testing.T) {
 		Execution:     ExecutionSpec{Repetitions: 2, WarmupRuns: 1, Seeds: []int64{11, 12}, Jobs: 1, RandomizeOrder: true},
 		Algorithms:    []string{"dijkstra"},
 		Observation:   ObservationSpec{Mode: "off"},
-		Scenarios:     []ScenarioCase{{ID: "grid", Graph: GeneratorSpec{Generator: "grid", Width: 3, Height: 3}, Queries: []QuerySpec{{ID: "q0", Strategy: "explicit", Source: &source0, Target: &target0}, {ID: "q1", Strategy: "explicit", Source: &source1, Target: &target1}}}},
+		Scenarios:     []ScenarioCase{{ID: "grid", Graph: GeneratorSpec{Generator: "grid", Width: 3, Height: 3}, Queries: []QuerySpec{{ID: "q0", Strategy: "explicit_endpoints", Source: &source0, Target: &target0}, {ID: "q1", Strategy: "explicit_endpoints", Source: &source1, Target: &target1}}}},
 	}
 	result, err := RunScenario(context.Background(), s)
 	if err != nil {
@@ -74,3 +74,4 @@ func TestScenarioRejectsLegacyObservationModes(t *testing.T) {
 		}
 	}
 }
+

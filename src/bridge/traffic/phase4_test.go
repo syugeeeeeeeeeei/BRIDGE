@@ -14,7 +14,7 @@ func TestPhase4AblationAndFailureContracts(t *testing.T) {
 		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1},
 		Algorithms:    []string{"bridge"},
 		Observation:   ObservationSpec{Mode: "summary", SampleRate: 1},
-		Scenarios:     []ScenarioCase{{ID: "budget", Graph: GeneratorSpec{Generator: "grid", Nodes: 25, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "opposite-corners"}, Route: RouteSpec{Mode: core.ModeQuality, Workers: 1}, Budget: BudgetSpec{TotalWork: &budget}, Ablation: AblationSpec{DisableFallback: true, DisableCertification: true}}},
+		Scenarios:     []ScenarioCase{{ID: "budget", Graph: GeneratorSpec{Generator: "grid", Nodes: 25, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}, Route: RouteSpec{Mode: core.ModeQuality, Workers: 1}, Budget: BudgetSpec{TotalWork: &budget}, Ablation: AblationSpec{DisableFallback: true, DisableCertification: true}}},
 	}
 	got, err := RunScenario(context.Background(), s)
 	if err != nil {
@@ -37,3 +37,4 @@ func TestPhase4AblationAndFailureContracts(t *testing.T) {
 		t.Fatal("missing improvement statistics")
 	}
 }
+

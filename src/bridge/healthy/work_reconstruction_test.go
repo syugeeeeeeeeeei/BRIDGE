@@ -18,3 +18,4 @@ func TestReconstructWorkRejectsIncompleteTrace(t *testing.T) {
 		t.Fatal("sampled trace must not be verifiable")
 	}
 }
+

@@ -24,8 +24,8 @@ type StableTaskTrace struct {
 	Reason     string  `json:"reason"`
 	Allocation string  `json:"allocation"`
 	Budget     *uint64 `json:"budget,omitempty"`
-	Found      bool    `json:"found"`
-	Distance   string  `json:"distance"`
+	Found      bool    `json:"path_found"`
+	Distance   string  `json:"path_cost"`
 	WorkUsed   uint64  `json:"work_used"`
 }
 
@@ -33,26 +33,28 @@ type StableTaskTrace struct {
 // fields. Runtime measurements and map iteration dependent representations are
 // deliberately excluded.
 type StableRouteResult struct {
-	Found             bool              `json:"found"`
-	Path              []core.NodeID     `json:"path"`
-	Distance          string            `json:"distance"`
-	Exact             bool              `json:"exact"`
-	SolverName        string            `json:"solver_name"`
-	Work              core.WorkMetrics  `json:"work"`
-	WorkRelaxations   uint64            `json:"work_relaxations"`
-	WorkExpandedNodes uint64            `json:"work_expanded_nodes"`
-	QueuePushes       uint64            `json:"queue_pushes"`
-	QueuePops         uint64            `json:"queue_pops"`
-	ParallelSteps     uint64            `json:"parallel_steps"`
-	LowerBound        string            `json:"lower_bound"`
-	CertifiedRatio    *string           `json:"certified_ratio,omitempty"`
-	QualityCertified  bool              `json:"quality_certified"`
-	FirstPathWork     *uint64           `json:"first_path_work,omitempty"`
-	FallbackUsed      bool              `json:"fallback_used"`
-	BudgetExhausted   bool              `json:"budget_exhausted"`
-	DeadlineExceeded  bool              `json:"deadline_exceeded"`
-	ErrorCode         core.ErrorCode    `json:"error_code,omitempty"`
-	SolverTrace       []StableTaskTrace `json:"solver_trace,omitempty"`
+	Found              bool              `json:"path_found"`
+	Path               []core.NodeID     `json:"path"`
+	Distance           string            `json:"path_cost"`
+	SearchCompleted    bool              `json:"search_completed"`
+	ReachabilityProven bool              `json:"reachability_proven"`
+	Exact              bool              `json:"optimality_proven"`
+	SolverName         string            `json:"solver_name"`
+	Work               core.WorkMetrics  `json:"work"`
+	WorkRelaxations    uint64            `json:"work_relaxations"`
+	WorkExpandedNodes  uint64            `json:"work_expanded_nodes"`
+	QueuePushes        uint64            `json:"queue_pushes"`
+	QueuePops          uint64            `json:"queue_pops"`
+	ParallelSteps      uint64            `json:"parallel_steps"`
+	LowerBound         string            `json:"lower_bound"`
+	CertifiedRatio     *string           `json:"proven_cost_ratio,omitempty"`
+	QualityCertified   bool              `json:"quality_bound_proven"`
+	FirstPathWork      *uint64           `json:"first_path_work,omitempty"`
+	FallbackUsed       bool              `json:"fallback_used"`
+	BudgetExhausted    bool              `json:"budget_exhausted"`
+	DeadlineExceeded   bool              `json:"deadline_exceeded"`
+	ErrorCode          core.ErrorCode    `json:"error_code,omitempty"`
+	SolverTrace        []StableTaskTrace `json:"solver_trace,omitempty"`
 }
 
 func stableFloat(v float64) string {
@@ -90,7 +92,8 @@ func StableResult(result core.RouteResult) StableRouteResult {
 	}
 	return StableRouteResult{
 		Found: result.Found, Path: append([]core.NodeID(nil), result.Path...),
-		Distance: stableFloat(result.Distance), Exact: result.Exact,
+		Distance: stableFloat(result.Distance), SearchCompleted: result.SearchCompleted,
+		ReachabilityProven: result.ReachabilityProven, Exact: result.Exact,
 		SolverName: result.SolverName, Work: result.Work, WorkRelaxations: result.WorkRelaxations,
 		WorkExpandedNodes: result.WorkExpandedNodes, QueuePushes: result.QueuePushes,
 		QueuePops: result.QueuePops, ParallelSteps: result.ParallelSteps,

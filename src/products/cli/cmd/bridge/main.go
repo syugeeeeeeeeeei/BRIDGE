@@ -355,7 +355,7 @@ func benchmarkList(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	for _, c := range s.Scenarios {
-		fmt.Fprintf(stdout, "%s\t%s\t%d nodes\t%s\n", c.ID, c.Graph.Generator, c.Graph.Nodes, c.Endpoints.Strategy)
+		fmt.Fprintf(stdout, "%s\t%s\t%d requested_nodes\t%s\n", c.ID, c.Graph.Generator, c.Graph.Nodes, c.Endpoints.Strategy)
 	}
 	return 0
 }
@@ -417,7 +417,7 @@ func writeBenchmark(w io.Writer, format string, r traffic.BenchmarkResult) error
 	case "csv":
 		cw := csv.NewWriter(w)
 		defer cw.Flush()
-		if err := cw.Write([]string{"suite_id", "scenario_id", "algorithm", "target_kind", "execution_path", "runs", "found_rate", "exact_rate", "average_distance", "average_work", "average_solver_time_ms", "average_end_to_end_time_ms", "passed"}); err != nil {
+		if err := cw.Write([]string{"suite_id", "scenario_id", "algorithm", "target_kind", "execution_path", "runs", "path_found_rate", "optimality_proven_rate", "mean_path_cost", "mean_work_actions", "mean_solver_time_ms", "mean_end_to_end_time_ms", "passed"}); err != nil {
 			return err
 		}
 		for _, c := range r.Cases {
@@ -428,7 +428,7 @@ func writeBenchmark(w io.Writer, format string, r traffic.BenchmarkResult) error
 		return cw.Error()
 	case "console":
 		fmt.Fprintf(w, "Suite: %s\nPassed: %t\n\n", r.SuiteID, r.Passed)
-		fmt.Fprintln(w, "SCENARIO\tALGORITHM\tPATH\tRUNS\tFOUND\tEXACT\tAVG WORK\tSOLVER MS\tEND-TO-END MS")
+		fmt.Fprintln(w, "SCENARIO\tALGORITHM\tPATH\tRUNS\tPATH FOUND\tOPTIMALITY\tMEAN WORK\tSOLVER MS\tEND-TO-END MS")
 		for _, c := range r.Cases {
 			fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%.3f\t%.3f\t%.1f\t%.3f\t%.3f\n", c.ScenarioID, c.Algorithm, c.ExecutionPath, c.Runs, c.FoundRate, c.ExactRate, c.AverageWork, c.AverageSolverTimeMS, c.AverageEndToEndMS)
 		}

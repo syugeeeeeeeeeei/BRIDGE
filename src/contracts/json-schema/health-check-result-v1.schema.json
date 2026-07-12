@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "BRIDGE Health Check Result v1",
+  "title": "BRIDGE Health Check Result v2",
   "type": "object",
   "required": [
     "schema_version",
@@ -14,7 +14,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.health-check.v1"
+      "const": "bridge.health.result.v2"
     },
     "source_artifact_id": {
       "type": "string"

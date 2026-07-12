@@ -9,8 +9,8 @@ class SDKTest(unittest.TestCase):
     def test_bundled_route(self):
         client = BridgeClient.local()
         response = client.route(REQ)
-        self.assertTrue(response.result["found"])
-        self.assertEqual(response.result["distance"], 1)
+        self.assertTrue(response.result["path_found"])
+        self.assertEqual(response.result["path_cost"], 1)
     def test_validation_error(self):
         client = BridgeClient.local()
         bad = dict(REQ); bad["schema_version"] = "bad"
@@ -28,6 +28,6 @@ class AsyncSDKTest(unittest.IsolatedAsyncioTestCase):
     async def test_async_route(self):
         client = BridgeClient.local()
         response = await client.route_async(REQ)
-        self.assertTrue(response.result["found"])
+        self.assertTrue(response.result["path_found"])
 
 if __name__ == "__main__": unittest.main()

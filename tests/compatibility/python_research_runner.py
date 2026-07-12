@@ -68,7 +68,7 @@ def main():
                     ratio=1.0; match=True
                 else:
                     ratio=math.inf; match=False
-                rows.append(dict(implementation='python',topology=topology,nodes=side_nodes(n),seed=seed,mode='balanced',found=got.found,distance=got.distance,exact_distance=exact.distance,distance_ratio=ratio,exact_match=match,total_work=got.total_work,scheduled_steps=got.parallel_steps,time_ms=got.time_ms))
+                rows.append(dict(implementation='python',topology=topology,requested_node_count=side_nodes(n),seed=seed,route_mode='balanced',path_found=got.found,path_cost=got.distance,exact_distance=exact.distance,cost_ratio_to_exact_reference=ratio,matches_exact_reference=match,total_work=got.total_work,scheduled_steps=got.parallel_steps,end_to_end_time_ms=got.time_ms))
     out.write_text(json.dumps(rows,indent=2,allow_nan=True),encoding='utf-8')
     print(f'wrote {len(rows)} rows to {out}')
 

@@ -130,7 +130,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "found_rate_min": {
+        "path_found_rate_min": {
           "type": "number",
           "minimum": 0,
           "maximum": 1

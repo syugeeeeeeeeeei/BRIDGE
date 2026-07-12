@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "BRIDGE Health Profile v1",
+  "title": "BRIDGE Health Profile v2",
   "type": "object",
   "required": [
     "schema_version",
@@ -10,7 +10,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.health-profile.v1"
+      "const": "bridge.health.profile.v2"
     },
     "candidate_algorithm": {
       "type": "string",

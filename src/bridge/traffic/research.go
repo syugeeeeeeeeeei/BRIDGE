@@ -9,17 +9,17 @@ import (
 type ResearchRow struct {
 	Implementation string  `json:"implementation"`
 	Topology       string  `json:"topology"`
-	Nodes          int     `json:"nodes"`
+	Nodes          int     `json:"requested_node_count"`
 	Seed           int64   `json:"seed"`
-	Mode           string  `json:"mode"`
-	Found          bool    `json:"found"`
-	Distance       float64 `json:"distance"`
+	Mode           string  `json:"route_mode"`
+	Found          bool    `json:"path_found"`
+	Distance       float64 `json:"path_cost"`
 	ExactDistance  float64 `json:"exact_distance"`
-	DistanceRatio  float64 `json:"distance_ratio"`
-	ExactMatch     bool    `json:"exact_match"`
+	DistanceRatio  float64 `json:"cost_ratio_to_exact_reference"`
+	ExactMatch     bool    `json:"matches_exact_reference"`
 	TotalWork      uint64  `json:"total_work"`
 	ScheduledSteps uint64  `json:"scheduled_steps"`
-	TimeMS         float64 `json:"time_ms"`
+	TimeMS         float64 `json:"end_to_end_time_ms"`
 }
 
 type ReadinessThresholds struct {

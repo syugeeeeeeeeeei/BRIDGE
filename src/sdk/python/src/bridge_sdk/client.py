@@ -49,7 +49,7 @@ class BridgeClient:
             result = json.loads(cp.stdout)
         except json.JSONDecodeError as exc:
             raise BridgeProtocolError("BRIDGE stdout was not valid JSON", exit_code=cp.returncode, stdout=cp.stdout, stderr=cp.stderr) from exc
-        if result.get("schema_version") != "bridge.route.result.v1":
+        if result.get("schema_version") != "bridge.route.result.v2":
             raise BridgeProtocolError("unsupported route result schema", stdout=cp.stdout, stderr=cp.stderr)
         warnings = tuple(line.removeprefix("warning:").strip() for line in cp.stderr.splitlines() if line.strip())
         return RouteResponse(result=result, warnings=warnings)
@@ -73,7 +73,7 @@ class BridgeClient:
             result = json.loads(stdout)
         except json.JSONDecodeError as exc:
             raise BridgeProtocolError("BRIDGE stdout was not valid JSON", stdout=stdout, stderr=stderr) from exc
-        if result.get("schema_version") != "bridge.route.result.v1":
+        if result.get("schema_version") != "bridge.route.result.v2":
             raise BridgeProtocolError("unsupported route result schema", stdout=stdout, stderr=stderr)
         warnings = tuple(line.removeprefix("warning:").strip() for line in stderr.splitlines() if line.strip())
         return RouteResponse(result=result, warnings=warnings)

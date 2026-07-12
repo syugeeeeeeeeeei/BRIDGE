@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://bridge.local/schemas/benchmark-result-v1.schema.json",
-  "title": "BRIDGE Benchmark Result v1",
+  "$id": "https://bridge.local/schemas/benchmark-result-v2.schema.json",
+  "title": "BRIDGE Benchmark Result v2",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -16,7 +16,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.benchmark.result.v1"
+      "const": "bridge.benchmark.result.v2"
     },
     "suite_id": {
       "type": "string",
@@ -147,8 +147,8 @@
         "seed",
         "repetition",
         "warmup",
-        "found",
-        "exact",
+        "path_found",
+        "optimality_proven",
         "work",
         "solver_time_ms",
         "end_to_end_time_ms",
@@ -196,13 +196,13 @@
         "warmup": {
           "type": "boolean"
         },
-        "found": {
+        "path_found": {
           "type": "boolean"
         },
-        "exact": {
+        "optimality_proven": {
           "type": "boolean"
         },
-        "distance": {
+        "path_cost": {
           "type": "number",
           "minimum": 0
         },
@@ -235,11 +235,11 @@
             "seed": {
               "type": "integer"
             },
-            "nodes": {
+            "actual_node_count": {
               "type": "integer",
               "minimum": 0
             },
-            "edges": {
+            "edge_count": {
               "type": "integer",
               "minimum": 0
             },
@@ -267,7 +267,7 @@
           "type": "integer",
           "minimum": 1
         },
-        "observation": {
+        "observation_data": {
           "type": "object"
         },
         "observation_overhead_ratio": {
@@ -301,11 +301,11 @@
         "scenario_id",
         "algorithm",
         "runs",
-        "found_rate",
-        "exact_rate",
-        "average_distance",
-        "average_work",
-        "average_time_ms",
+        "path_found_rate",
+        "optimality_proven_rate",
+        "mean_path_cost",
+        "mean_work_actions",
+        "mean_time_ms",
         "work_statistics",
         "solver_time_statistics",
         "end_to_end_time_statistics",
@@ -328,32 +328,32 @@
           "type": "integer",
           "minimum": 1
         },
-        "found_rate": {
+        "path_found_rate": {
           "type": "number",
           "minimum": 0,
           "maximum": 1
         },
-        "exact_rate": {
+        "optimality_proven_rate": {
           "type": "number",
           "minimum": 0,
           "maximum": 1
         },
-        "average_distance": {
+        "mean_path_cost": {
           "type": "number"
         },
-        "average_work": {
+        "mean_work_actions": {
           "type": "number",
           "minimum": 0
         },
-        "average_time_ms": {
+        "mean_time_ms": {
           "type": "number",
           "minimum": 0
         },
-        "average_solver_time_ms": {
+        "mean_solver_time_ms": {
           "type": "number",
           "minimum": 0
         },
-        "average_end_to_end_time_ms": {
+        "mean_end_to_end_time_ms": {
           "type": "number",
           "minimum": 0
         },

@@ -13,7 +13,7 @@ type QualityPoint struct {
 	Sequence  uint64  `json:"sequence"`
 	ElapsedNS int64   `json:"elapsed_ns"`
 	Work      uint64  `json:"work"`
-	Distance  float64 `json:"distance"`
+	Distance  float64 `json:"path_cost"`
 }
 type BudgetPoint struct {
 	Sequence   uint64 `json:"sequence"`

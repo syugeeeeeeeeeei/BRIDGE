@@ -9,7 +9,7 @@ import (
 )
 
 func TestRunScenario(t *testing.T) {
-	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "test"}, Execution: ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1}, Algorithms: []string{"bridge", "anchor", "dijkstra"}, Scenarios: []ScenarioCase{{ID: "grid", Graph: GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "opposite-corners"}}}}
+	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "test"}, Execution: ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1}, Algorithms: []string{"bridge", "anchor", "dijkstra"}, Scenarios: []ScenarioCase{{ID: "grid", Graph: GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}}}}
 	r, err := RunScenario(context.Background(), s)
 	if err != nil {
 		t.Fatal(err)
@@ -38,7 +38,7 @@ func TestRunScenarioRandomGeometric(t *testing.T) {
 		Scenarios: []ScenarioCase{{
 			ID:        "geo",
 			Graph:     GeneratorSpec{Generator: "random_geometric", Nodes: 40, K: 6},
-			Endpoints: EndpointSpec{Strategy: "opposite-corners"},
+			Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"},
 		}},
 	}
 	r, err := RunScenario(context.Background(), s)
@@ -59,7 +59,7 @@ func TestRunScenarioReportsProgress(t *testing.T) {
 		Scenarios: []ScenarioCase{{
 			ID:        "grid",
 			Graph:     GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"},
-			Endpoints: EndpointSpec{Strategy: "opposite-corners"},
+			Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"},
 		}},
 	}
 	var lines []string
@@ -94,7 +94,7 @@ func TestRunScenarioWritesOutputArtifacts(t *testing.T) {
 		Scenarios: []ScenarioCase{{
 			ID:        "grid",
 			Graph:     GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"},
-			Endpoints: EndpointSpec{Strategy: "opposite-corners"},
+			Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"},
 		}},
 	}
 	_, err := RunScenarioWithOptions(context.Background(), s, RunScenarioOptions{Overwrite: true})
@@ -109,7 +109,7 @@ func TestRunScenarioWritesOutputArtifacts(t *testing.T) {
 	}
 }
 func TestScenarioRejectsUnsupportedAlgorithm(t *testing.T) {
-	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "x"}, Execution: ExecutionSpec{Repetitions: 1, Jobs: 1}, Algorithms: []string{"astar"}, Scenarios: []ScenarioCase{{ID: "x", Graph: GeneratorSpec{Generator: "grid", Nodes: 4, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "opposite-corners"}}}}
+	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "x"}, Execution: ExecutionSpec{Repetitions: 1, Jobs: 1}, Algorithms: []string{"astar"}, Scenarios: []ScenarioCase{{ID: "x", Graph: GeneratorSpec{Generator: "grid", Nodes: 4, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}}}}
 	s.ApplyDefaults()
 	if err := s.Validate(); err != nil {
 		t.Fatalf("astar should now be supported: %v", err)
@@ -117,9 +117,10 @@ func TestScenarioRejectsUnsupportedAlgorithm(t *testing.T) {
 }
 
 func TestScenarioRejectsUnknownAlgorithm(t *testing.T) {
-	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "x"}, Execution: ExecutionSpec{Repetitions: 1, Jobs: 1}, Algorithms: []string{"mystery"}, Scenarios: []ScenarioCase{{ID: "x", Graph: GeneratorSpec{Generator: "grid", Nodes: 4, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "opposite-corners"}}}}
+	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "x"}, Execution: ExecutionSpec{Repetitions: 1, Jobs: 1}, Algorithms: []string{"mystery"}, Scenarios: []ScenarioCase{{ID: "x", Graph: GeneratorSpec{Generator: "grid", Nodes: 4, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}}}}
 	s.ApplyDefaults()
 	if s.Validate() == nil {
 		t.Fatal("expected validation error")
 	}
 }
+

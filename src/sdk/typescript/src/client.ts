@@ -26,7 +26,7 @@ export class BridgeClient {
     if (p.code !== 0) throw this.processError(p);
     let result: RouteResult;
     try { result = JSON.parse(p.stdout) as RouteResult; } catch { throw new BridgeProtocolError("BRIDGE stdout was not valid JSON", p.code, p.stdout, p.stderr); }
-    if (result.schema_version !== "bridge.route.result.v1") throw new BridgeProtocolError("unsupported route result schema", p.code, p.stdout, p.stderr);
+    if (result.schema_version !== "bridge.route.result.v2") throw new BridgeProtocolError("unsupported route result schema", p.code, p.stdout, p.stderr);
     return { result, warnings: p.stderr.split(/\r?\n/).filter(Boolean).map(v => v.replace(/^warning:\s*/, "")) };
   }
   private run(args: string[], input?: string, options: RouteOptions = {}): Promise<ProcessResult> {

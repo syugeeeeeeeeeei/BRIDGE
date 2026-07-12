@@ -749,20 +749,32 @@ func main() {
 
 ````json
 {
-  "nodes": 4,
-  "directed": false,
-  "edges": [
-    {"from": 0, "to": 1, "weight": 1.0},
-    {"from": 1, "to": 2, "weight": 1.0},
-    {"from": 2, "to": 3, "weight": 1.0},
-    {"from": 0, "to": 3, "weight": 10.0}
-  ],
-  "request": {
+  "schema_version": "bridge.route.request.v2",
+  "graph": {
+    "type": "inline",
+    "directed": false,
+    "nodes": [
+      {"id": 0},
+      {"id": 1},
+      {"id": 2},
+      {"id": 3}
+    ],
+    "edges": [
+      {"from": 0, "to": 1, "weight": 1.0},
+      {"from": 1, "to": 2, "weight": 1.0},
+      {"from": 2, "to": 3, "weight": 1.0},
+      {"from": 0, "to": 3, "weight": 10.0}
+    ]
+  },
+  "route": {
     "source": 0,
     "target": 3,
-    "mode": "balanced",
-    "workers": 1,
+    "route_mode": "balanced",
+    "logical_worker_count": 1,
     "seed": 1
+  },
+  "observation_config": {
+    "level": "off"
   }
 }
 ````
@@ -784,20 +796,32 @@ import json
 import urllib.request
 
 payload = {
-    "nodes": 4,
-    "directed": False,
-    "edges": [
-        {"from": 0, "to": 1, "weight": 1.0},
-        {"from": 1, "to": 2, "weight": 1.0},
-        {"from": 2, "to": 3, "weight": 1.0},
-        {"from": 0, "to": 3, "weight": 10.0},
-    ],
-    "request": {
+    "schema_version": "bridge.route.request.v2",
+    "graph": {
+        "type": "inline",
+        "directed": False,
+        "nodes": [
+            {"id": 0},
+            {"id": 1},
+            {"id": 2},
+            {"id": 3},
+        ],
+        "edges": [
+            {"from": 0, "to": 1, "weight": 1.0},
+            {"from": 1, "to": 2, "weight": 1.0},
+            {"from": 2, "to": 3, "weight": 1.0},
+            {"from": 0, "to": 3, "weight": 10.0},
+        ],
+    },
+    "route": {
         "source": 0,
         "target": 3,
-        "mode": "balanced",
-        "workers": 1,
+        "route_mode": "balanced",
+        "logical_worker_count": 1,
         "seed": 1,
+    },
+    "observation_config": {
+        "level": "off",
     },
 }
 
@@ -812,7 +836,7 @@ with urllib.request.urlopen(request) as response:
     result = json.load(response)
 
 print(result["path"])
-print(result["distance"])
+print(result["path_cost"])
 ````
 
 ## 9.4 Node.js / TypeScriptからの連携
@@ -822,20 +846,27 @@ const response = await fetch("http://localhost:8080/route", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    nodes: 4,
-    directed: false,
-    edges: [
-      { from: 0, to: 1, weight: 1.0 },
-      { from: 1, to: 2, weight: 1.0 },
-      { from: 2, to: 3, weight: 1.0 },
-      { from: 0, to: 3, weight: 10.0 },
-    ],
-    request: {
+    schema_version: "bridge.route.request.v2",
+    graph: {
+      type: "inline",
+      directed: false,
+      nodes: [{ id: 0 }, { id: 1 }, { id: 2 }, { id: 3 }],
+      edges: [
+        { from: 0, to: 1, weight: 1.0 },
+        { from: 1, to: 2, weight: 1.0 },
+        { from: 2, to: 3, weight: 1.0 },
+        { from: 0, to: 3, weight: 10.0 },
+      ],
+    },
+    route: {
       source: 0,
       target: 3,
-      mode: "balanced",
-      workers: 1,
+      route_mode: "balanced",
+      logical_worker_count: 1,
       seed: 1,
+    },
+    observation_config: {
+      level: "off",
     },
   }),
 });

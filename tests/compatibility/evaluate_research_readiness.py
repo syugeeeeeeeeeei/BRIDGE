@@ -35,16 +35,16 @@ def main():
     subprocess.run(['go','run','./others/legacy/cmd-v0.10/bridge-research','--output',str(GO)],cwd=ROOT,check=True)
     subprocess.run([sys.executable,str(ROOT/'tests'/'compatibility'/'python_research_runner.py'),str(PY)],cwd=ROOT,check=True)
     go=json.loads(GO.read_text()); py=json.loads(PY.read_text())
-    key=lambda r:(r['topology'],r['nodes'],r['seed'],r['mode'])
+    key=lambda r:(r['topology'],r['requested_node_count'],r['seed'],r['route_mode'])
     gm={key(r):r for r in go}; pm={key(r):r for r in py}; common=sorted(gm.keys()&pm.keys())
-    connected=[gm[k] for k in common if k[0]!='disconnected']; ratios=finite([r['distance_ratio'] for r in connected])
-    valid=sum((not r['found']) or math.isfinite(r['distance']) for r in go)/len(go)
-    found=sum(r['found'] for r in connected)/len(connected)
+    connected=[gm[k] for k in common if k[0]!='disconnected']; ratios=finite([r['cost_ratio_to_exact_reference'] for r in connected])
+    valid=sum((not r['path_found']) or math.isfinite(r['path_cost']) for r in go)/len(go)
+    found=sum(r['path_found'] for r in connected)/len(connected)
     coverage=len(common)/max(len(gm),len(pm))
     # Correlate per-case difficulty rather than exact values.
-    distance_corr=corr([pm[k]['distance_ratio'] for k in common],[gm[k]['distance_ratio'] for k in common])
+    distance_corr=corr([pm[k]['cost_ratio_to_exact_reference'] for k in common],[gm[k]['cost_ratio_to_exact_reference'] for k in common])
     work_corr=corr([pm[k]['total_work'] for k in common],[gm[k]['total_work'] for k in common])
-    found_agreement=sum(pm[k]['found']==gm[k]['found'] for k in common)/len(common)
+    found_agreement=sum(pm[k]['path_found']==gm[k]['path_found'] for k in common)/len(common)
     metrics={'cases_go':len(go),'cases_python':len(py),'paired_cases':len(common),'valid_path_rate':valid,
       'connected_found_rate':found,'mean_distance_ratio':statistics.fmean(ratios),'p95_distance_ratio':p95(ratios),
       'worst_distance_ratio':max(ratios),'topology_coverage':coverage,'found_agreement':found_agreement,

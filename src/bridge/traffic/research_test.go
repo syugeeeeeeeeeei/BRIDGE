@@ -71,3 +71,4 @@ func TestSpearman(t *testing.T) {
 		t.Fatalf("r=%f", r)
 	}
 }
+

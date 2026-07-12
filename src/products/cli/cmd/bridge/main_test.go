@@ -45,7 +45,7 @@ func TestBenchmarkValidateRejectsInvalidScenario(t *testing.T) {
 func TestBenchmarkRunAcceptanceExitCode(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "fail.json")
-	data := `{"schema_version":"bridge.benchmark.v2","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":1},"algorithms":["bridge"],"observation_config":{"level":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}],"acceptance":{"average_work_max":0}}`
+	data := `{"schema_version":"bridge.benchmark.v2","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":1},"algorithms":["bridge"],"observation_config":{"level":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}],"acceptance":{"mean_work_actions_max":0}}`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
 		t.Fatal(err)
 	}

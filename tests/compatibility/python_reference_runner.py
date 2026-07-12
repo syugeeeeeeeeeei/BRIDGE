@@ -17,5 +17,5 @@ for name,n,edges,directed,s,t in CASES:
     for i in range(n): g.adj.setdefault(i,[])
     for mode in ("exact","quality"):
         r=Gate().route(g,s,t,mode=mode,workers=1)
-        out.append({"case":name,"mode":mode,"found":r.found,"distance":None if math.isinf(r.distance) else r.distance,"exact":r.exact,"quality_certified":r.quality_certified,"path":list(r.path)})
+        out.append({"case":name,"route_mode":mode,"path_found":r.found,"path_cost":None if math.isinf(r.distance) else r.distance,"optimality_proven":r.exact,"quality_bound_proven":r.quality_certified,"path":list(r.path)})
 print(json.dumps(out, sort_keys=True, separators=(",",":")))
