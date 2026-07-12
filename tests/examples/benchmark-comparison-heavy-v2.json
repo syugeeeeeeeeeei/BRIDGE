@@ -5,9 +5,9 @@
     "description": "Heavier local comparison benchmark across multiple graph families and solver choices."
   },
   "execution": {
-    "repetitions": 3,
+    "repetitions": 2,
     "warmup_runs": 1,
-    "seeds": [11, 29, 47],
+    "seeds": [11],
     "jobs": 1,
     "timeout": "45s",
     "randomize_order": true
@@ -15,7 +15,6 @@
   "algorithms": [
     "bridge",
     "anchor",
-    "dijkstra",
     "bidirectional_dijkstra",
     "astar",
     "weighted_astar",
@@ -30,7 +29,7 @@
     "artifact_id": "benchmark-comparison-heavy-v2",
     "save_raw_results": true,
     "save_graph_snapshot": true,
-    "save_trace": true,
+    "save_trace": false,
     "capture_environment": true,
     "metadata": {
       "purpose": "local-heavy-comparison",
@@ -40,10 +39,10 @@
   },
   "scenarios": [
     {
-      "id": "grid-open-400",
+      "id": "grid-open-1000",
       "graph": {
         "generator": "grid",
-        "requested_node_count": 400,
+        "requested_node_count": 1000,
         "topology": "open"
       },
       "endpoints": {
@@ -59,10 +58,10 @@
       }
     },
     {
-      "id": "grid-wall-400",
+      "id": "grid-wall-1000",
       "graph": {
         "generator": "grid",
-        "requested_node_count": 400,
+        "requested_node_count": 1000,
         "topology": "wall",
         "edge_weight_noise": 0.03
       },
@@ -79,10 +78,10 @@
       }
     },
     {
-      "id": "grid-u-shape-900",
+      "id": "grid-u-shape-1000",
       "graph": {
         "generator": "grid",
-        "requested_node_count": 900,
+        "requested_node_count": 1000,
         "topology": "u_shape",
         "edge_weight_noise": 0.03
       },
@@ -99,10 +98,10 @@
       }
     },
     {
-      "id": "random-geometric-512",
+      "id": "random-geometric-1000",
       "graph": {
         "generator": "random_geometric",
-        "requested_node_count": 512,
+        "requested_node_count": 1000,
         "neighbor_candidate_count": 8
       },
       "endpoints": {
@@ -118,10 +117,10 @@
       }
     },
     {
-      "id": "community-512",
+      "id": "community-1000",
       "graph": {
         "generator": "community",
-        "requested_node_count": 512,
+        "requested_node_count": 1000,
         "community_count": 8
       },
       "queries": [
@@ -140,10 +139,10 @@
       }
     },
     {
-      "id": "maze-625",
+      "id": "maze-1000",
       "graph": {
         "generator": "maze",
-        "requested_node_count": 625
+        "requested_node_count": 1000
       },
       "endpoints": {
         "query_selection_method": "generator_default_endpoints"
