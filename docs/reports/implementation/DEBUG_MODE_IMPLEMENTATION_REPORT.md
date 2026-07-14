@@ -25,4 +25,5 @@
 
 1000ノード条件では、旧実装で発生したPanicは再現せず、minimumとdebugのWork、経路発見率、最適性判定が一致した。debug成果物には`traces/`が作成されず、`trace_sink_write_ns`は0であった。
 
-詳細な項目と証跡は`docs/benchmark/DEBUG_MODE_IMPLEMENTATION_CHECKLIST.md`を参照する。
+詳細な項目と証跡は`docs/reports/audits/DEBUG_MODE_IMPLEMENTATION_CHECKLIST.md`を参照する。
+

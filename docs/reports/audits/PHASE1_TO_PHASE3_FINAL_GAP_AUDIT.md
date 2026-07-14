@@ -41,4 +41,5 @@ Phase 1〜3の公開契約、実装、schema、テスト、用語集を再監査
 
 ## 完了判定
 
-`docs/reports/PHASE1_TO_PHASE3_COMPLETION_CHECKLIST.md`の項目はすべて実装または明示的なlegacy移行で解決済みである。Phase 1〜3を完了とみなす。
+`docs/reports/audits/PHASE1_TO_PHASE3_COMPLETION_CHECKLIST.md`の項目はすべて実装または明示的なlegacy移行で解決済みである。Phase 1〜3を完了とみなす。
+

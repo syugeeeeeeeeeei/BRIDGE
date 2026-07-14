@@ -2,7 +2,7 @@
 
 - Introduced resumable ANCHOR sessions, v2 domain contracts, and decomposed TRUSS service primitives.
 - Removed the detached legacy ANCHOR search body.
-- See `docs/reports/V0.15.0_IMPLEMENTATION_AUDIT.md` for strict release status.
+- See `docs/reports/audits/V0.15.0_IMPLEMENTATION_AUDIT.md` for strict release status.
 
 ## v0.14.3
 
@@ -196,3 +196,4 @@
 - Documented Reachability and Optimality as separate proof semantics.
 - Documented fail-closed benchmark validation and observation-free warm-up behavior.
 - Marked the initial v0.0.1 architecture specification as historical.
+

@@ -162,7 +162,7 @@ python tests/compatibility/evaluate_research_readiness.py
 結果は標準出力にJSONとして表示され、次のファイルにも保存されます。
 
 ````text
-docs/reports/GO_MIGRATION_READINESS.json
+docs/reports/migration/GO_MIGRATION_READINESS.json
 ````
 
 終了コードは次の意味です。
@@ -1100,3 +1100,4 @@ Warm-upは本計測、raw測定Run、acceptance判定から除外されます。
 ### 11.6 fail-closed検査
 
 TRAFFICは証明、終了状態、Path、Timingに矛盾があるRunを補正せず失敗させます。研究結果を作成する際は、Run数だけでなく不変条件違反が0件であることを確認してください。
+
