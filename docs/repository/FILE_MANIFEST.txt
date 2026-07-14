@@ -1,5 +1,5 @@
 docs/ARCHITECTURE_RULE.md
-docs/CHANGELOG.md
+docs/repository/CHANGELOG.md
 README.md
 docs/WORD_DEFINITION.md
 bridge/anchor/COMPONENT_RULE.md

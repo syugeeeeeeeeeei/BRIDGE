@@ -169,7 +169,7 @@ func route(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	}
 	var collector *ultrasound.Collector
 	if *traceOutput != "" {
-		if req.Observation.Mode == "" || req.Observation.Mode == gate.ObservationOff {
+		if req.Observation.Mode == "" || req.Observation.Mode == gate.ObservationMinimum {
 			req.Observation.Mode = gate.ObservationTrace
 		}
 		fsink, sinkErr := ultrasound.NewFileSink(*traceOutput, *traceOverwrite)
@@ -279,7 +279,7 @@ func benchmarkRun(args []string, stdout, stderr io.Writer) int {
 	}
 	progress := newRewritingProgressReporter(stderr)
 	result, err := traffic.RunScenarioWithOptions(context.Background(), s, traffic.RunScenarioOptions{
-		Overwrite:        true,
+		ScenarioPath:     scenarioPath,
 		ProgressReporter: progress,
 	})
 	progress.Finish()
@@ -290,10 +290,31 @@ func benchmarkRun(args []string, stdout, stderr io.Writer) int {
 		}
 		return exitInternal
 	}
-	if err := writeBenchmarkArchive(s.Output.OutputDir, s.Output.ArtifactID); err != nil {
-		fmt.Fprintln(stderr, "error:", err)
+	profile := healthy.DefaultProfile("bridge", "dijkstra")
+	healthResult, healthErr := healthy.Analyze(context.Background(), result, profile)
+	if healthErr != nil {
+		fmt.Fprintln(stderr, "error: HEALTHY:", healthErr)
+		return exitInternal
+	}
+	healthPath := filepath.Join(result.OutputDirectory, "healthy.json")
+	healthFile, healthErr := os.OpenFile(healthPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if healthErr != nil {
+		fmt.Fprintln(stderr, "error:", healthErr)
 		return exitIO
 	}
+	healthEncoder := json.NewEncoder(healthFile)
+	healthEncoder.SetIndent("", "  ")
+	healthErr = healthEncoder.Encode(healthResult)
+	closeErr := healthFile.Close()
+	if healthErr != nil {
+		fmt.Fprintln(stderr, "error:", healthErr)
+		return exitIO
+	}
+	if closeErr != nil {
+		fmt.Fprintln(stderr, "error:", closeErr)
+		return exitIO
+	}
+	fmt.Fprintln(stderr, "artifacts:", result.OutputDirectory)
 	if err := writeBenchmark(stdout, "console", result); err != nil {
 		fmt.Fprintln(stderr, "error:", err)
 		return exitUsage
@@ -357,7 +378,7 @@ func benchmarkList(args []string, stdout, stderr io.Writer) int {
 		return exitUsage
 	}
 	for _, c := range s.Scenarios {
-		fmt.Fprintf(stdout, "%s\t%s\t%d requested_nodes\t%s\n", c.ID, c.Graph.Generator, c.Graph.Nodes, c.Endpoints.Strategy)
+		fmt.Fprintf(stdout, "%s\t%s\t%d requested_nodes\t%s\n", c.ID, c.Graph.Generator, c.Graph.Nodes, c.Queries[0].Selection.Method)
 	}
 	return 0
 }

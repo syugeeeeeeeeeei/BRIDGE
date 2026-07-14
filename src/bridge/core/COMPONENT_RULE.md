@@ -1,60 +1,46 @@
 # CORE コンポーネント規則
 
 **対象package:** `src/bridge/core`  
+**対象版:** v0.15.0以降  
 **状態:** 規範文書
 
-## 1. 目的
+## 1. 責務
 
-COREは、共有値型と中立的なデータ契約を担当する。
+COREは共有値型と中立契約だけを所有する。
 
-## 2. 所有する責務
+- Graph、NodeID、Edge
+- RouteRequest、RouteResult
+- Hypothesis、Region、Checkpoint
+- Evidence、ProofClass
+- HandoffRequest、HandoffResult
+- TerminationStatus
+- Work Model v2、WorkMetrics、Budget、Bounds
 
-- `NodeID`、`Edge`、Graph契約
-- `RouteRequest`、`RouteResult`
-- `WorkMetrics`、Budget、Bounds
-- cancellationとerror codeの中立表現
+## 2. 禁止事項
 
-## 3. 禁止する責務
-
-- solver選択
-- portfolio制御
-- trace保存
-- CLI/JSON変換
+- solver選択、task scheduling、予算配分
+- 証明の生成または昇格
+- trace保存、CLI/JSON I/O
 - algorithm固有heuristic
+- 他のBRIDGE componentへの依存
 
-## 4. 依存規則
+## 3. 不変条件
 
-Go標準ライブラリのみを原則とする。ほかのBRIDGE componentへ依存しない。
+- `TerminationStatus`は排他的である
+- EvidenceはScope、生成元、Generated Work、ProofClassを持つ
+- empirical Evidenceをproofとして扱わない
+- Work Model versionは`2.0`である
+- 公開契約にsolver private stateを漏らさない
 
-`others/legacy/bridge_py`へ依存してはならない。package間循環依存を作ってはならない。
+## 4. 必須テスト
 
-## 5. Go実装規則
+- 型とvalidationの単体テスト
+- Evidence不正昇格negative test
+- TerminationStatus整合テスト
+- Work Model version・Actionテスト
+- architecture dependency test
 
-- 公開型・関数にはGoDocを付ける
-- errorをpanicへ変換しない
-- 大規模処理で不要なallocationを増やさない
-- map iteration順に結果を依存させない
-- WorkとStepは`docs/WORD_DEFINITION.md`の意味で計測する
-- cancellationとdeadlineを区別する
-
-## 6. 不変条件
-
-- budget超過を発生させない
-- 同一入力では決定論的な結果を返す
-- observer有効・無効で探索結果を変えない
-- public contractにprivate stateを漏らさない
-
-## 7. 必須テスト
-
-- 単体テスト
-- budget境界テスト
-- cancellationテスト
-- 決定論性テスト
-- architecture dependencyテスト
-- 該当する場合はPython-Go paired test
-
-## 8. 関連文書
+## 5. 関連文書
 
 - `docs/ARCHITECTURE_RULE.md`
 - `docs/WORD_DEFINITION.md`
-- `docs/architecture/BRIDGE_architecture_spec_v0.0.1.md`

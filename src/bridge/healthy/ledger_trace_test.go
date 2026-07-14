@@ -54,4 +54,3 @@ func TestLoadTraceVerifiesDigestAndReconstructs(t *testing.T) {
 		t.Fatalf("bad reconstruction: %+v", rec)
 	}
 }
-

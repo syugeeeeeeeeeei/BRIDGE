@@ -9,7 +9,7 @@ import (
 )
 
 func TestRunScenario(t *testing.T) {
-	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "test"}, Execution: ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1}, Algorithms: []string{"bridge", "anchor", "dijkstra"}, Scenarios: []ScenarioCase{{ID: "grid", Graph: GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}}}}
+	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "test"}, Execution: ExecutionSpec{Repetitions: 1, Seeds: []int64{1}}, Algorithms: []string{"bridge", "anchor", "dijkstra"}, Scenarios: []ScenarioCase{{ID: "grid", Graph: GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"}, Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}}}}}
 	r, err := RunScenario(context.Background(), s)
 	if err != nil {
 		t.Fatal(err)
@@ -33,12 +33,12 @@ func TestRunScenarioRandomGeometric(t *testing.T) {
 	s := BenchmarkScenario{
 		SchemaVersion: BenchmarkSchemaV1,
 		Suite:         SuiteSpec{ID: "random-geometric"},
-		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1},
+		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}},
 		Algorithms:    []string{"bridge", "astar"},
 		Scenarios: []ScenarioCase{{
-			ID:        "geo",
-			Graph:     GeneratorSpec{Generator: "random_geometric", Nodes: 40, K: 6},
-			Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"},
+			ID:      "geo",
+			Graph:   GeneratorSpec{Generator: "random_geometric", Nodes: 40, K: 6},
+			Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}},
 		}},
 	}
 	r, err := RunScenario(context.Background(), s)
@@ -54,12 +54,12 @@ func TestRunScenarioReportsProgress(t *testing.T) {
 	s := BenchmarkScenario{
 		SchemaVersion: BenchmarkSchemaV1,
 		Suite:         SuiteSpec{ID: "progress"},
-		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1},
+		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}},
 		Algorithms:    []string{"bridge", "astar"},
 		Scenarios: []ScenarioCase{{
-			ID:        "grid",
-			Graph:     GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"},
-			Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"},
+			ID:      "grid",
+			Graph:   GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"},
+			Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}},
 		}},
 	}
 	var lines []string
@@ -87,39 +87,30 @@ func TestRunScenarioWritesOutputArtifacts(t *testing.T) {
 	s := BenchmarkScenario{
 		SchemaVersion: BenchmarkSchemaV1,
 		Suite:         SuiteSpec{ID: "artifacts"},
-		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1},
+		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}},
 		Algorithms:    []string{"bridge"},
-		Observation:   ObservationSpec{Mode: "off"},
-		Output:        OutputSpec{OutputDir: dir, SaveRawResults: true, SaveGraphSnapshot: true},
+		Observation:   ObservationSpec{Mode: "minimum"},
+		Output:        OutputSpec{Directory: dir},
 		Scenarios: []ScenarioCase{{
-			ID:        "grid",
-			Graph:     GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"},
-			Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"},
+			ID:      "grid",
+			Graph:   GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"},
+			Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}},
 		}},
 	}
-	r, err := RunScenarioWithOptions(context.Background(), s, RunScenarioOptions{Overwrite: true})
+	r, err := RunScenarioWithOptions(context.Background(), s, RunScenarioOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "result.json")); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(dir, "grid", "bridge__seed-1__rep-1", "raw-result.json")); err != nil {
-		t.Fatal(err)
-	}
-	graphPath := filepath.Join(dir, "grid", "bridge__seed-1__rep-1", "graph.json")
-	if _, err := os.Stat(graphPath); err != nil {
+	if _, err := os.Stat(filepath.Join(r.OutputDirectory, "result.json")); err != nil {
 		t.Fatal(err)
 	}
 	if len(r.Runs) != 1 {
 		t.Fatalf("runs=%d", len(r.Runs))
 	}
-	if r.Runs[0].References.GraphSnapshotPath == "" || r.Runs[0].References.GraphSnapshotSHA256 == "" {
-		t.Fatalf("graph snapshot reference missing: %+v", r.Runs[0].References)
-	}
+
 }
 func TestScenarioRejectsUnsupportedAlgorithm(t *testing.T) {
-	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "x"}, Execution: ExecutionSpec{Repetitions: 1, Jobs: 1}, Algorithms: []string{"astar"}, Scenarios: []ScenarioCase{{ID: "x", Graph: GeneratorSpec{Generator: "grid", Nodes: 4, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}}}}
+	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "x"}, Execution: ExecutionSpec{Repetitions: 1}, Algorithms: []string{"astar"}, Scenarios: []ScenarioCase{{ID: "x", Graph: GeneratorSpec{Generator: "grid", Nodes: 4, Topology: "open"}, Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}}}}}
 	s.ApplyDefaults()
 	if err := s.Validate(); err != nil {
 		t.Fatalf("astar should now be supported: %v", err)
@@ -127,7 +118,7 @@ func TestScenarioRejectsUnsupportedAlgorithm(t *testing.T) {
 }
 
 func TestScenarioRejectsUnknownAlgorithm(t *testing.T) {
-	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "x"}, Execution: ExecutionSpec{Repetitions: 1, Jobs: 1}, Algorithms: []string{"mystery"}, Scenarios: []ScenarioCase{{ID: "x", Graph: GeneratorSpec{Generator: "grid", Nodes: 4, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}}}}
+	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "x"}, Execution: ExecutionSpec{Repetitions: 1}, Algorithms: []string{"mystery"}, Scenarios: []ScenarioCase{{ID: "x", Graph: GeneratorSpec{Generator: "grid", Nodes: 4, Topology: "open"}, Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}}}}}
 	s.ApplyDefaults()
 	if s.Validate() == nil {
 		t.Fatal("expected validation error")
@@ -136,8 +127,7 @@ func TestScenarioRejectsUnknownAlgorithm(t *testing.T) {
 
 func TestScenarioRejectsGraphSnapshotOutputWithoutDir(t *testing.T) {
 	s := validScenario()
-	s.Output.SaveGraphSnapshot = true
-	s.Output.OutputDir = ""
+	s.Output.Directory = ""
 	if err := s.Validate(); err == nil {
 		t.Fatal("expected error")
 	}

@@ -102,6 +102,7 @@ func (t *Truss) runResolved(ctx context.Context, g core.Graph, req core.RouteReq
 	result.Telemetry["target_kind"] = string(target.targetKind)
 	result.Telemetry["execution_path"] = target.executionPath
 	result.Telemetry["solver_time_ms"] = result.TimeMS
+	result.Telemetry["solver_time_ns"] = result.TimeBreakdown.SolverNS
 	t.emit("component_finished", map[string]any{
 		"component": target.component, "solver": target.solver.Name(), "purpose": purpose,
 		"found": result.Found, "work": result.TotalWork(), "distance": result.Distance,
@@ -148,7 +149,12 @@ func (t *Truss) ExecuteOnce(ctx context.Context, g core.Graph, req ExecuteOnceRe
 		defer cancel()
 	}
 	result := t.runResolved(ctx, g, routeReq, target, "single_run", "execute_once", core.WorkBudget{MaxWork: routeReq.WorkBudget})
-	endToEndMS := float64(time.Since(start).Microseconds()) / 1000
+	endToEndNS := time.Since(start).Nanoseconds()
+	endToEndMS := float64(endToEndNS) / 1_000_000
+	result.TimeBreakdown.TotalNS = endToEndNS
+	result.TimeBreakdown.TrussNS = endToEndNS
+	result.TimeBreakdown.TotalMS = endToEndMS
+	result.TimeBreakdown.TrussMS = endToEndMS
 	result.SolverName = target.targetID
 	result.TimeMS = endToEndMS
 	if ctx.Err() == context.DeadlineExceeded {

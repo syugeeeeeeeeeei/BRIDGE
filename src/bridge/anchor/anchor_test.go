@@ -73,7 +73,7 @@ func TestObservationModesDoNotChangeStableOutcome(t *testing.T) {
 	b := uint64(300)
 	r := core.RouteRequest{Source: 0, Target: 99, Mode: core.ModeBalanced, Workers: 1, AnchorStrategy: "geometric_corridor"}
 	base := Solver{}.Solve(context.Background(), g, r, core.WorkBudget{MaxWork: &b}, bearing.NullObserver{})
-	for _, mode := range []string{"aggregate", "trace"} {
+	for _, mode := range []string{"debug", "trace"} {
 		c := ultrasound.NewCollector(mode, &ultrasound.MemorySink{})
 		got := Solver{}.Solve(context.Background(), g, r, core.WorkBudget{MaxWork: &b}, c)
 		if base.Found != got.Found || base.Distance != got.Distance || base.Work != got.Work || len(base.Path) != len(got.Path) {

@@ -87,23 +87,25 @@ type AlgorithmConfiguration struct {
 
 // ExecutionResult records result facts and algorithm claims without acceptance judgment.
 type ExecutionResult struct {
-	Path                []core.NodeID      `json:"returned_path,omitempty"`
-	PathFound           bool               `json:"path_found"`
-	SearchCompleted     bool               `json:"search_completed"`
-	ReachabilityProven  bool               `json:"reachability_proven"`
-	OptimalityProven    bool               `json:"optimality_proven"`
-	PathCost            *float64           `json:"path_cost,omitempty"`
-	ErrorCode           core.ErrorCode     `json:"error_code,omitempty"`
-	FailureReason       string             `json:"failure_reason,omitempty"`
-	TerminationReason   string             `json:"termination_reason,omitempty"`
-	TimeToFirstPathMS   *float64           `json:"first_path_elapsed_ms,omitempty"`
-	TimeToBestFoundMS   *float64           `json:"best_path_elapsed_ms,omitempty"`
-	ImprovementCount    uint64             `json:"improvement_count"`
-	BridgeOverheadRatio float64            `json:"bridge_overhead_ratio,omitempty"`
-	DuplicatedWorkRatio float64            `json:"duplicated_work_ratio,omitempty"`
-	StateReuseRatio     float64            `json:"state_reuse_ratio,omitempty"`
-	BudgetLedger        *core.BudgetLedger `json:"budget_ledger,omitempty"`
-	QualityClaims       QualityClaims      `json:"quality_claims"`
+	Path                []core.NodeID           `json:"returned_path,omitempty"`
+	PathFound           bool                    `json:"path_found"`
+	SearchCompleted     bool                    `json:"search_completed"`
+	ReachabilityProven  bool                    `json:"reachability_proven"`
+	OptimalityProven    bool                    `json:"optimality_proven"`
+	PathCost            *float64                `json:"path_cost,omitempty"`
+	ErrorCode           core.ErrorCode          `json:"error_code,omitempty"`
+	FailureReason       string                  `json:"failure_reason,omitempty"`
+	TerminationReason   string                  `json:"termination_reason,omitempty"`
+	TimeToFirstPathMS   *float64                `json:"first_path_elapsed_ms,omitempty"`
+	TimeToBestFoundMS   *float64                `json:"best_path_elapsed_ms,omitempty"`
+	ImprovementCount    uint64                  `json:"improvement_count"`
+	BridgeOverheadRatio float64                 `json:"bridge_overhead_ratio,omitempty"`
+	DuplicatedWorkRatio float64                 `json:"duplicated_work_ratio,omitempty"`
+	StateReuseRatio     float64                 `json:"state_reuse_ratio,omitempty"`
+	BudgetLedger        *core.BudgetLedger      `json:"budget_ledger,omitempty"`
+	HandoffMetrics      *core.HandoffMetrics    `json:"handoff_metrics,omitempty"`
+	BottleneckProfile   *core.BottleneckProfile `json:"bottleneck_profile,omitempty"`
+	QualityClaims       QualityClaims           `json:"quality_claims"`
 }
 
 type QualityClaims struct {
@@ -116,9 +118,32 @@ type Measurement struct {
 	Work           core.WorkMetrics   `json:"work"`
 	TimeBreakdown  core.TimeBreakdown `json:"time_breakdown"`
 	SystemMetrics  core.SystemMetrics `json:"system_metrics"`
+	SolverTimeNS   int64              `json:"solver_time_ns"`
+	EndToEndTimeNS int64              `json:"end_to_end_time_ns"`
 	SolverTimeMS   float64            `json:"solver_time_ms"`
 	EndToEndTimeMS float64            `json:"end_to_end_time_ms"`
 	ZeroDuration   bool               `json:"zero_duration"`
+	TimingValid    bool               `json:"timing_valid"`
+	TimingIssue    string             `json:"timing_issue,omitempty"`
+}
+
+type DebugSummary struct {
+	ActionCounts           map[string]uint64       `json:"action_counts"`
+	WorkByComponent        map[string]uint64       `json:"work_by_component,omitempty"`
+	BudgetGrantedByPurpose map[string]uint64       `json:"budget_granted_by_purpose,omitempty"`
+	BudgetUsedByPurpose    map[string]uint64       `json:"budget_used_by_purpose,omitempty"`
+	CandidateUpdateCount   uint64                  `json:"candidate_update_count"`
+	FallbackCount          uint64                  `json:"fallback_count"`
+	CertificationCount     uint64                  `json:"certification_count"`
+	StateReuseAppliedCount uint64                  `json:"state_reuse_applied_count"`
+	MaxFrontierSize        uint64                  `json:"max_frontier_size"`
+	ComponentEventCounts   map[string]uint64       `json:"component_event_counts,omitempty"`
+	ObservationOverheadNS  int64                   `json:"observation_overhead_ns"`
+	TraceSinkWriteNS       int64                   `json:"trace_sink_write_ns"`
+	DroppedEvents          uint64                  `json:"dropped_events"`
+	Truncated              bool                    `json:"truncated"`
+	HandoffMetrics         *core.HandoffMetrics    `json:"handoff_metrics,omitempty"`
+	BottleneckProfile      *core.BottleneckProfile `json:"bottleneck_profile,omitempty"`
 }
 
 type Observations struct {
@@ -126,6 +151,7 @@ type Observations struct {
 	QualityHistory   []ultrasound.QualityPoint    `json:"quality_history,omitempty"`
 	BudgetHistory    []ultrasound.BudgetPoint     `json:"budget_history,omitempty"`
 	CollectorMetrics *ultrasound.CollectorMetrics `json:"collector_metrics,omitempty"`
+	DebugSummary     *DebugSummary                `json:"debug_summary,omitempty"`
 }
 
 type References struct {
@@ -217,7 +243,7 @@ func effectiveQueries(c ScenarioCase) []QuerySpec {
 	if len(c.Queries) > 0 {
 		return c.Queries
 	}
-	return []QuerySpec{{ID: "default", Strategy: c.Endpoints.Strategy, Source: c.Endpoints.Source, Target: c.Endpoints.Target}}
+	return []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}}
 }
 
 type runPlan struct {

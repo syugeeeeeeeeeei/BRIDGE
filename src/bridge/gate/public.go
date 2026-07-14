@@ -39,12 +39,13 @@ type GraphInput struct {
 }
 
 type RouteInput struct {
-	Source           uint32         `json:"source"`
-	Target           uint32         `json:"target"`
-	Mode             core.RouteMode `json:"route_mode,omitempty"`
-	MaxSuboptimality *float64       `json:"max_suboptimality,omitempty"`
-	Workers          int            `json:"logical_worker_count,omitempty"`
-	Seed             uint64         `json:"seed,omitempty"`
+	Source               uint32         `json:"source"`
+	Target               uint32         `json:"target"`
+	Mode                 core.RouteMode `json:"route_mode,omitempty"`
+	MaxSuboptimality     *float64       `json:"max_suboptimality,omitempty"`
+	Workers              int            `json:"logical_worker_count,omitempty"`
+	Seed                 uint64         `json:"seed,omitempty"`
+	HandoffWorkThreshold *uint64        `json:"handoff_work_threshold,omitempty"`
 }
 
 type BudgetInput struct {
@@ -55,9 +56,9 @@ type BudgetInput struct {
 type ObservationMode string
 
 const (
-	ObservationOff       ObservationMode = "off"
-	ObservationAggregate ObservationMode = "aggregate"
-	ObservationTrace     ObservationMode = "trace"
+	ObservationMinimum ObservationMode = "minimum"
+	ObservationDebug   ObservationMode = "debug"
+	ObservationTrace   ObservationMode = "trace"
 )
 
 type AblationInput = core.AblationOptions
@@ -118,30 +119,32 @@ type ObservationResult struct {
 }
 
 type RouteResult struct {
-	SchemaVersion       string             `json:"schema_version"`
-	RequestID           string             `json:"request_id,omitempty"`
-	Status              string             `json:"status"`
-	Found               bool               `json:"path_found"`
-	SearchCompleted     bool               `json:"search_completed"`
-	ReachabilityProven  bool               `json:"reachability_proven"`
-	Distance            *float64           `json:"path_cost,omitempty"`
-	Path                []uint32           `json:"path"`
-	Exact               bool               `json:"optimality_proven"`
-	SolverName          string             `json:"solver_name,omitempty"`
-	Work                core.WorkMetrics   `json:"work"`
-	SolverTimeMS        float64            `json:"solver_time_ms,omitempty"`
-	TimeBreakdown       core.TimeBreakdown `json:"time_breakdown"`
-	TimeMS              float64            `json:"end_to_end_time_ms"`
-	ErrorCode           core.ErrorCode     `json:"error_code,omitempty"`
-	Observation         *ObservationResult `json:"observation_data,omitempty"`
-	FailureReason       string             `json:"failure_reason,omitempty"`
-	TimeToFirstPathMS   *float64           `json:"first_path_elapsed_ms,omitempty"`
-	TimeToBestFoundMS   *float64           `json:"best_path_elapsed_ms,omitempty"`
-	ImprovementCount    uint64             `json:"improvement_count"`
-	BridgeOverheadRatio float64            `json:"bridge_overhead_ratio,omitempty"`
-	DuplicatedWorkRatio float64            `json:"duplicated_work_ratio,omitempty"`
-	StateReuseRatio     float64            `json:"state_reuse_ratio,omitempty"`
-	BudgetLedger        *core.BudgetLedger `json:"budget_ledger,omitempty"`
+	SchemaVersion       string                  `json:"schema_version"`
+	RequestID           string                  `json:"request_id,omitempty"`
+	Status              string                  `json:"status"`
+	Found               bool                    `json:"path_found"`
+	SearchCompleted     bool                    `json:"search_completed"`
+	ReachabilityProven  bool                    `json:"reachability_proven"`
+	Distance            *float64                `json:"path_cost,omitempty"`
+	Path                []uint32                `json:"path"`
+	Exact               bool                    `json:"optimality_proven"`
+	SolverName          string                  `json:"solver_name,omitempty"`
+	Work                core.WorkMetrics        `json:"work"`
+	SolverTimeMS        float64                 `json:"solver_time_ms,omitempty"`
+	TimeBreakdown       core.TimeBreakdown      `json:"time_breakdown"`
+	TimeMS              float64                 `json:"end_to_end_time_ms"`
+	ErrorCode           core.ErrorCode          `json:"error_code,omitempty"`
+	Observation         *ObservationResult      `json:"observation_data,omitempty"`
+	FailureReason       string                  `json:"failure_reason,omitempty"`
+	TimeToFirstPathMS   *float64                `json:"first_path_elapsed_ms,omitempty"`
+	TimeToBestFoundMS   *float64                `json:"best_path_elapsed_ms,omitempty"`
+	ImprovementCount    uint64                  `json:"improvement_count"`
+	BridgeOverheadRatio float64                 `json:"bridge_overhead_ratio,omitempty"`
+	DuplicatedWorkRatio float64                 `json:"duplicated_work_ratio,omitempty"`
+	StateReuseRatio     float64                 `json:"state_reuse_ratio,omitempty"`
+	BudgetLedger        *core.BudgetLedger      `json:"budget_ledger,omitempty"`
+	HandoffMetrics      *core.HandoffMetrics    `json:"handoff_metrics,omitempty"`
+	BottleneckProfile   *core.BottleneckProfile `json:"bottleneck_profile,omitempty"`
 }
 
 type ExecuteResult struct {
@@ -204,30 +207,29 @@ func (r *Router) Route(ctx context.Context, req RouteRequest, opts RouteOptions)
 	if workers == 0 {
 		workers = 1
 	}
-	internal := core.RouteRequest{Source: core.NodeID(req.Route.Source), Target: core.NodeID(req.Route.Target), Mode: mode, MaxSuboptimality: req.Route.MaxSuboptimality, DeadlineMS: req.Budget.TimeoutMS, WorkBudget: req.Budget.TotalWork, Workers: workers, Seed: req.Route.Seed, Ablation: req.Ablation}
-	if err := internal.Validate(g); err != nil {
-		return RouteResult{}, &PublicError{Code: "INVALID_REQUEST", Message: err.Error()}
-	}
 	obsMode, err := resolveObservationMode(opts, req.Observation.Mode)
 	if err != nil {
 		return RouteResult{}, err
+	}
+	internal := core.RouteRequest{Source: core.NodeID(req.Route.Source), Target: core.NodeID(req.Route.Target), Mode: mode, MaxSuboptimality: req.Route.MaxSuboptimality, DeadlineMS: req.Budget.TimeoutMS, WorkBudget: req.Budget.TotalWork, Workers: workers, Seed: req.Route.Seed, Ablation: req.Ablation, CollectProgressSamples: obsMode == ObservationDebug, HandoffWorkThreshold: req.Route.HandoffWorkThreshold}
+	if err := internal.Validate(g); err != nil {
+		return RouteResult{}, &PublicError{Code: "INVALID_REQUEST", Message: err.Error()}
 	}
 	observer := opts.Observation.Observer
 	if observer == nil {
 		observer = bearing.NullObserver{}
 	}
 	result, err := New(observer).Route(ctx, g, internal)
-	result.TimeBreakdown.GateMS = float64(time.Since(gateStarted).Microseconds())/1000 - result.TimeBreakdown.TotalMS
-	if result.TimeBreakdown.GateMS < 0 {
-		result.TimeBreakdown.GateMS = 0
-	}
+	publicNS := time.Since(gateStarted).Nanoseconds()
+	result.TimeBreakdown.GateNS = publicNS
+	result.TimeBreakdown.GateMS = float64(publicNS) / 1_000_000
 	_ = obsMode
 	observationResult := observationResultFromReporter(opts.Observation.Reporter)
 	if err != nil {
 		return RouteResult{}, err
 	}
 	searchCompleted := !result.BudgetExhausted && !result.DeadlineExceeded && result.ErrorCode != core.ErrCancelled
-	out := RouteResult{SchemaVersion: RouteResultSchemaV1, RequestID: req.RequestID, Found: result.Found, SearchCompleted: searchCompleted, ReachabilityProven: searchCompleted, Exact: result.Exact, SolverName: result.SolverName, Work: result.Work, SolverTimeMS: telemetryFloat(result.Telemetry, "solver_time_ms", result.TimeMS), TimeBreakdown: result.TimeBreakdown, TimeMS: result.TimeMS, ErrorCode: result.ErrorCode, Observation: observationResult, FailureReason: result.FailureReason, TimeToFirstPathMS: result.TimeToFirstPathMS, TimeToBestFoundMS: result.TimeToBestFoundMS, ImprovementCount: result.ImprovementCount, BridgeOverheadRatio: telemetryFloat(result.Telemetry, "bridge_overhead_ratio", 0), DuplicatedWorkRatio: telemetryFloat(result.Telemetry, "duplicated_work_ratio", 0), StateReuseRatio: telemetryFloat(result.Telemetry, "state_reuse_ratio", 0), BudgetLedger: result.BudgetLedger, Path: make([]uint32, len(result.Path))}
+	out := RouteResult{SchemaVersion: RouteResultSchemaV1, RequestID: req.RequestID, Found: result.Found, SearchCompleted: searchCompleted, ReachabilityProven: result.Found || result.ReachabilityProven, Exact: result.Exact, SolverName: result.SolverName, Work: result.Work, SolverTimeMS: telemetryFloat(result.Telemetry, "solver_time_ms", result.TimeMS), TimeBreakdown: result.TimeBreakdown, TimeMS: result.TimeMS, ErrorCode: result.ErrorCode, Observation: observationResult, FailureReason: result.FailureReason, TimeToFirstPathMS: result.TimeToFirstPathMS, TimeToBestFoundMS: result.TimeToBestFoundMS, ImprovementCount: result.ImprovementCount, BridgeOverheadRatio: telemetryFloat(result.Telemetry, "bridge_overhead_ratio", 0), DuplicatedWorkRatio: telemetryFloat(result.Telemetry, "duplicated_work_ratio", 0), StateReuseRatio: telemetryFloat(result.Telemetry, "state_reuse_ratio", 0), BudgetLedger: result.BudgetLedger, HandoffMetrics: result.HandoffMetrics, BottleneckProfile: result.BottleneckProfile, Path: make([]uint32, len(result.Path))}
 	for i, n := range result.Path {
 		out.Path[i] = uint32(n)
 	}
@@ -276,10 +278,9 @@ func (r *Router) ExecuteOnce(ctx context.Context, req ExecuteRequest, opts Route
 		Ablation:   req.Ablation,
 	}
 	result, err := New(observer).ExecuteOnce(ctx, g, internal)
-	result.Result.TimeBreakdown.GateMS = float64(time.Since(gateStarted).Microseconds())/1000 - result.Result.TimeBreakdown.TotalMS
-	if result.Result.TimeBreakdown.GateMS < 0 {
-		result.Result.TimeBreakdown.GateMS = 0
-	}
+	publicNS := time.Since(gateStarted).Nanoseconds()
+	result.Result.TimeBreakdown.GateNS = publicNS
+	result.Result.TimeBreakdown.GateMS = float64(publicNS) / 1_000_000
 	if err != nil {
 		code := "INVALID_REQUEST"
 		if internal.TargetID == "" || result.Result.ErrorCode == "" {
@@ -293,7 +294,7 @@ func (r *Router) ExecuteOnce(ctx context.Context, req ExecuteRequest, opts Route
 		RequestID:          req.RequestID,
 		Found:              result.Result.Found,
 		SearchCompleted:    !result.Result.BudgetExhausted && !result.Result.DeadlineExceeded && result.Result.ErrorCode != core.ErrCancelled,
-		ReachabilityProven: !result.Result.BudgetExhausted && !result.Result.DeadlineExceeded && result.Result.ErrorCode != core.ErrCancelled,
+		ReachabilityProven: result.Result.Found || result.Result.ReachabilityProven,
 		Exact:              result.Result.Exact,
 		SolverName:         result.Result.SolverName,
 		TargetID:           result.TargetID,
@@ -332,10 +333,10 @@ func resolveObservationMode(opts RouteOptions, fallback ObservationMode) (Observ
 		obsMode = fallback
 	}
 	if obsMode == "" {
-		obsMode = ObservationOff
+		obsMode = ObservationMinimum
 	}
 	switch obsMode {
-	case ObservationOff, ObservationAggregate, ObservationTrace:
+	case ObservationMinimum, ObservationDebug, ObservationTrace:
 		return obsMode, nil
 	default:
 		return "", &PublicError{Code: "INVALID_OBSERVATION", Message: fmt.Sprintf("unsupported observation mode %q", obsMode)}

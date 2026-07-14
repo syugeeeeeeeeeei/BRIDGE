@@ -56,3 +56,49 @@ func TestExecuteOnceRejectsUnknownTarget(t *testing.T) {
 		t.Fatal("expected error")
 	}
 }
+
+func TestRoutePropagatesSolverNanoseconds(t *testing.T) {
+	got, err := New(nil).Route(context.Background(), testGraph(), core.RouteRequest{
+		Source:  0,
+		Target:  3,
+		Mode:    core.ModeBalanced,
+		Workers: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	b := got.TimeBreakdown
+	if b.SolverNS <= 0 {
+		t.Fatalf("solver nanoseconds were not propagated: %+v", b)
+	}
+	if b.SolverNS != b.AnchorNS+b.BoltsNS {
+		t.Fatalf("solver_ns must equal anchor_ns + bolts_ns: %+v", b)
+	}
+	if b.SolverMS != float64(b.SolverNS)/1_000_000 {
+		t.Fatalf("solver_ms must derive from solver_ns: %+v", b)
+	}
+	if b.TotalNS < b.SolverNS {
+		t.Fatalf("total_ns must not be less than solver_ns: %+v", b)
+	}
+	if got.Telemetry["solver_time_ns"] != b.SolverNS {
+		t.Fatalf("telemetry solver_time_ns mismatch: telemetry=%v breakdown=%+v", got.Telemetry["solver_time_ns"], b)
+	}
+}
+
+func TestExecuteOncePreservesSolverNanoseconds(t *testing.T) {
+	got, err := New(nil).ExecuteOnce(context.Background(), testGraph(), ExecuteOnceRequest{
+		TargetID: "anchor",
+		Source:   0,
+		Target:   3,
+		Workers:  1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Result.TimeBreakdown.SolverNS <= 0 {
+		t.Fatalf("solver nanoseconds missing: %+v", got.Result.TimeBreakdown)
+	}
+	if got.Result.TimeBreakdown.TotalNS < got.Result.TimeBreakdown.SolverNS {
+		t.Fatalf("execute_once total shorter than solver: %+v", got.Result.TimeBreakdown)
+	}
+}

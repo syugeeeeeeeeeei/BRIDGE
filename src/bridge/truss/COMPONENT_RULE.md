@@ -1,88 +1,74 @@
 # TRUSS コンポーネント規則
 
 **対象package:** `src/bridge/truss`  
+**対象版:** v0.15.0以降  
 **状態:** 規範文書
 
-## 1. 目的
+## 1. 責務
 
-TRUSSは、portfolio制御と予算の唯一の所有者を担当する。
+TRUSSはRoute Request単位のオンライン調停と総Work Budgetの唯一の所有者である。
 
-## 2. 所有する責務
+- Scheduler
+- BudgetManager
+- TaskRegistry
+- ExecutionEngine
+- SolverRouter
+- EvidenceStore
+- TerminationPolicy
+- epoch境界でのCandidate、Bound、Evidence統合
+- Handoffの生成、routing、結果適用
+- Arbiterによる最終候補選択
 
-- query profile
-- task生成とbudget slice
-- strategy/solver選択
-- shared bounds
-- fallback/certification
-- 最終結果選択
+## 2. 禁止事項
 
-## 3. 禁止する責務
+- frontier操作、edge relaxation
+- corridor形状やheuristic判断の直書き
+- solver private stateの参照
+- Observer出力による制御変更
+- ANCHOR終了後に全体問題をゼロからBOLTSへ渡す旧事後fallback
 
-- frontier操作
-- edge relaxation
-- solver private state参照
-- observer結果による制御変更
+## 3. 実行規則
 
-## 4. 依存規則
+1. runnable taskを登録する
+2. Schedulerが公平に選択する
+3. BudgetManagerがgrantを発行する
+4. ExecutionEngineがworker数に応じて実行する
+5. 消費Workを監査する
+6. epoch境界で固定順にEvidenceを統合する
+7. TerminationPolicyを評価する
 
-`CORE`、`ANCHOR`公開契約、`BOLTS`公開契約、`BEARING`に依存できる。
+ANCHORとBOLTSを直接結合せず、必ずTRUSSがHandoffを仲介する。
 
-`others/legacy/bridge_py`へ依存してはならない。package間循環依存を作ってはならない。
+## 4. Work規則
 
-## 5. Go実装規則
+- Solver WorkとControl Workの合計を総Budgetへ課金する
+- `schedule`、`hypothesis`、`handoff`、`evidence`をWork Model v2のActionとして計上する
+- Step consumedがgrantを超えた場合は即時エラーとする
+- Reported Work、Budget Ledger、Trace再構成値を一致させる
 
-- 公開型・関数にはGoDocを付ける
-- errorをpanicへ変換しない
-- 大規模処理で不要なallocationを増やさない
-- map iteration順に結果を依存させない
-- WorkとStepは`docs/WORD_DEFINITION.md`の意味で計測する
-- cancellationとdeadlineを区別する
+## 5. 証明・候補規則
 
-## 6. 不変条件
+Arbiterの比較順は次のとおりである。
 
-- budget超過を発生させない
-- 同一入力では決定論的な結果を返す
-- observer有効・無効で探索結果を変えない
-- public contractにprivate stateを漏らさない
+1. 経路妥当性
+2. 証明強度
+3. Proven Cost Ratio
+4. 距離
+5. Work
 
-## 7. 必須テスト
+Reachability証明をOptimality証明として扱わない。
 
-- 単体テスト
-- budget境界テスト
-- cancellationテスト
-- 決定論性テスト
-- architecture dependencyテスト
-- 該当する場合はPython-Go paired test
+## 6. 必須テスト
 
-## 8. 関連文書
+- online epoch統合テスト
+- budget境界・grant超過拒否テスト
+- ANCHOR→BOLTS→ANCHOR統合テスト
+- Evidence固定順統合テスト
+- worker数反映テスト
+- cancellation・race・決定論性テスト
 
-- `docs/ARCHITECTURE_RULE.md`
-- `docs/WORD_DEFINITION.md`
-- `docs/architecture/BRIDGE_architecture_spec_v0.0.1.md`
+## 条件付きBOLTS移行
 
-## v0.9 first-stage internal separation
-
-TRUSS remains one of BRIDGE's parallel major components and is the runtime orchestrator.
-Its first-stage internal responsibilities are separated into:
-
-- Orchestrator: applies state transitions and starts components.
-- Budget: owns and accounts for portfolio and component work budgets.
-- Supervisor: evaluates progress and emergency reports and recommends directives.
-- Arbiter: compares complete route candidates and selects the incumbent.
-
-ANCHOR and BOLTS MUST NOT directly invoke one another in production orchestration.
-They are coordinated by TRUSS. BEARING remains observation-only and MUST NOT carry directives.
-
-### Future separation triggers
-
-Scheduler may be separated in a second stage when parallel execution, dynamic lanes,
-pause/resume fairness, or deadlines become complex. Session Registry may be separated
-in a third stage when multiple nested or resumable ANCHOR/BOLTS sessions must be tracked.
-Neither is a separate subcomponent in the first stage.
-
-## Phase 4 ablation・説明可能性規則
-
-- Ablation optionはCOREの型付き契約から注入し、observer結果から制御判断を変更してはならない。
-- `disable_fallback`はfallback/reachabilityによる追加BOLTS実行を抑止する。
-- `disable_certification`はquality modeのcertification実行を抑止する。
-- Failure Reason、overhead ratio、重複探索指標は測定事実から構築し、GATEに評価判断を持ち込まない。
+- TRUSSはANCHORを単一Sessionで開始する。
+- BOLTSは固定実行せず、停滞または明示的Certification要求時だけ起動する。
+- BOLTS移行前後のWork、Handoff回数、State Reuseを記録する。

@@ -1,67 +1,31 @@
 # BEARING コンポーネント規則
 
 **対象package:** `src/bridge/bearing`  
+**対象版:** v0.15.0以降  
 **状態:** 規範文書
 
-## 1. 目的
+## 1. 責務
 
-BEARINGは、探索層と観測層の非干渉契約を担当する。
+- 型付きEvent envelope
+- component、phase、epoch、task、action vocabulary
+- Observer、DetailObserver
+- NullObserver、SafeObserver
 
-## 2. 所有する責務
+## 2. 禁止事項
 
-- typed event
-- phase/step/lane vocabulary
-- Null Observer
-- observer adapter contract
-- Null Observer／Safe Observer
+- event収集・保存・replay・分析
+- budget変更、cancel指示、solver選択
+- ULTRASOUNDへの依存
 
-## 3. 禁止する責務
+## 3. 不変条件
 
-- Collectorによるevent収集
-- Sink、trace保存
-- replay
-- bottleneck分析
-- budget変更
-- cancellation指示
+- Observerは探索の副作用を持たない
+- event sequenceは同一論理実行で再構成可能である
+- Observer失敗を探索結果へ伝播させない。ただし観測失敗自体は診断可能にする
+- Trace保存I/OをWorkへ含めない
 
-## 4. 依存規則
+## 4. 必須テスト
 
-中立的な`CORE`値型だけに依存する。`ULTRASOUND`へ依存しない。
-
-`others/legacy/bridge_py`へ依存してはならない。package間循環依存を作ってはならない。
-
-## 5. Go実装規則
-
-- 公開型・関数にはGoDocを付ける
-- errorをpanicへ変換しない
-- 大規模処理で不要なallocationを増やさない
-- map iteration順に結果を依存させない
-- WorkとStepは`docs/WORD_DEFINITION.md`の意味で計測する
-- cancellationとdeadlineを区別する
-
-## 6. 不変条件
-
-- budget超過を発生させない
-- 同一入力では決定論的な結果を返す
-- observer有効・無効で探索結果を変えない
-- public contractにprivate stateを漏らさない
-
-## 7. 必須テスト
-
-- 単体テスト
-- budget境界テスト
-- cancellationテスト
-- 決定論性テスト
-- architecture dependencyテスト
-- 該当する場合はPython-Go paired test
-
-## 8. 関連文書
-
-- `docs/ARCHITECTURE_RULE.md`
-- `docs/WORD_DEFINITION.md`
-- `docs/architecture/BRIDGE_architecture_spec_v0.0.1.md`
-
-## Phase 3 typed event vocabulary
-- event kindの正本は`events.go`とする。
-- BEARINGはevent envelope、canonical kind、event classのみを所有する。
-- eventを根拠に探索制御、budget配分、保存、分析を行ってはならない。
+- Null/Safe Observerテスト
+- Observer非干渉差分テスト
+- event vocabulary validationテスト

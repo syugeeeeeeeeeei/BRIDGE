@@ -26,7 +26,7 @@ func TestValidatePathAndWork(t *testing.T) {
 	}
 }
 func TestAnalyzeBenchmark(t *testing.T) {
-	s := traffic.BenchmarkScenario{SchemaVersion: traffic.BenchmarkSchemaV1, Suite: traffic.SuiteSpec{ID: "h"}, Execution: traffic.ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1}, Algorithms: []string{"dijkstra", "anchor"}, Observation: traffic.ObservationSpec{Mode: "off", SampleRate: 1}, Scenarios: []traffic.ScenarioCase{{ID: "g", Graph: traffic.GeneratorSpec{Generator: "grid", Nodes: 9, Topology: "open"}, Queries: []traffic.QuerySpec{{ID: "q", Strategy: "generator_default_endpoints"}}, Route: traffic.RouteSpec{Mode: core.ModeBalanced, Workers: 1}}}}
+	s := traffic.BenchmarkScenario{SchemaVersion: traffic.BenchmarkSchemaV1, Suite: traffic.SuiteSpec{ID: "h"}, Execution: traffic.ExecutionSpec{Repetitions: 1, Seeds: []int64{1}}, Algorithms: []string{"dijkstra", "anchor"}, Observation: traffic.ObservationSpec{Mode: "minimum"}, Scenarios: []traffic.ScenarioCase{{ID: "g", Graph: traffic.GeneratorSpec{Generator: "grid", Nodes: 9, Topology: "open"}, Queries: []traffic.QuerySpec{{ID: "q", Selection: traffic.QuerySelectionSpec{Method: "generator_default"}}}, Route: traffic.RouteSpec{Mode: core.ModeBalanced, Workers: 1}}}}
 	a, err := traffic.RunScenario(context.Background(), s)
 	if err != nil {
 		t.Fatal(err)

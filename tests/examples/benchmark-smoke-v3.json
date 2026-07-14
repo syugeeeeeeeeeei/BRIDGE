@@ -1,0 +1,78 @@
+{
+  "schema_version": "bridge.benchmark.v3",
+  "suite": {
+    "id": "benchmark-smoke-v2",
+    "description": "Small benchmark scenario for quick local verification of benchmark execution."
+  },
+  "execution": {
+    "repetitions": 1,
+    "warmup_runs": 0,
+    "seeds": [
+      1
+    ],
+    "randomize_order": false,
+    "run_timeout": "15s"
+  },
+  "algorithms": [
+    "bridge",
+    "dijkstra",
+    "astar",
+    "reachability"
+  ],
+  "scenarios": [
+    {
+      "id": "grid-open-25",
+      "graph": {
+        "generator": "grid",
+        "requested_node_count": 25,
+        "topology": "open"
+      },
+      "route": {
+        "logical_worker_count": 1,
+        "mode": "balanced"
+      },
+      "budget": {
+        "work_limit": 50000,
+        "search_time_limit": "5.0s"
+      },
+      "queries": [
+        {
+          "id": "default",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ]
+    },
+    {
+      "id": "random-geometric-32",
+      "graph": {
+        "generator": "random_geometric",
+        "requested_node_count": 32,
+        "neighbor_candidate_count": 6
+      },
+      "route": {
+        "logical_worker_count": 1,
+        "mode": "balanced"
+      },
+      "budget": {
+        "work_limit": 50000,
+        "search_time_limit": "5.0s"
+      },
+      "queries": [
+        {
+          "id": "default",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ]
+    }
+  ],
+  "observation": {
+    "mode": "minimum"
+  },
+  "output": {
+    "directory": "./artifacts"
+  }
+}

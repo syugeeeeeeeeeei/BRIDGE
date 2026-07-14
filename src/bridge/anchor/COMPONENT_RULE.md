@@ -1,67 +1,61 @@
 # ANCHOR コンポーネント規則
 
 **対象package:** `src/bridge/anchor`  
+**対象版:** v0.15.0以降  
 **状態:** 規範文書
 
-## 1. 目的
+## 1. 責務
 
-ANCHORは、BRIDGE固有の主Anytime探索を担当する。
+ANCHORは中断・再開可能な主探索Sessionを所有する。
 
-## 2. 所有する責務
+- HypothesisとRegion
+- corridor、portal、hub仮説
+- 局所探索状態とfrontier
+- Candidate、Upper Bound、Lower Bound
+- Checkpoint、停滞証拠、次操作提案
+- Snapshot／Resume
+- Handoff Resultの検証付き適用
 
-- HypothesisとCorridor探索
-- first path生成
-- Candidate生成と比較
-- local Repair
-- Work/Step報告
+## 2. 必須Session API
 
-## 3. 禁止する責務
+- `NewSession`
+- `Step`
+- `Snapshot`
+- `Resume`
+- `Progress`
+- `Result`
+- `Finished`
+- `Cancel`
 
-- portfolio全体予算の変更
-- fallback solver選択
-- 未証明exactの主張
-- ULTRASOUND直接依存
+一括`Solve`を提供する場合もSession adapterとして実装する。
 
-## 4. 依存規則
+## 3. 禁止事項
 
-`CORE`と`BEARING`に依存できる。補助機能は注入されたportを介する。
+- portfolio全体予算の所有
+- worker管理、BOLTS選択、終了方針
+- BOLTSの直接起動
+- 未証明Exactの主張
+- ULTRASOUNDへの依存
 
-`others/legacy/bridge_py`へ依存してはならない。package間循環依存を作ってはならない。
+## 4. 不変条件
 
-## 5. Go実装規則
+- `Step`はgrantを超過しない
+- 同一Work割当列では連続実行とSnapshot/Resumeが論理的に一致する
+- first pathだけを理由に強制終了しない
+- HypothesisごとにWork、Candidate、Bound、状態を保持する
+- Handoff適用時にPath、距離、Scope、Evidenceを検証する
 
-- 公開型・関数にはGoDocを付ける
-- errorをpanicへ変換しない
-- 大規模処理で不要なallocationを増やさない
-- map iteration順に結果を依存させない
-- WorkとStepは`docs/WORD_DEFINITION.md`の意味で計測する
-- cancellationとdeadlineを区別する
+## 5. 必須テスト
 
-## 6. 不変条件
+- Step境界値テスト
+- Snapshot/Resume同値性テスト
+- 仮説状態遷移テスト
+- first path後改善テスト
+- Handoff適用negative test
 
-- budget超過を発生させない
-- 同一入力では決定論的な結果を返す
-- observer有効・無効で探索結果を変えない
-- public contractにprivate stateを漏らさない
+## Adaptive Fast Path方針
 
-## 7. 必須テスト
-
-- 単体テスト
-- budget境界テスト
-- cancellationテスト
-- 決定論性テスト
-- architecture dependencyテスト
-- 該当する場合はPython-Go paired test
-
-## 8. 関連文書
-
-- `docs/ARCHITECTURE_RULE.md`
-- `docs/WORD_DEFINITION.md`
-- `docs/architecture/BRIDGE_architecture_spec_v0.0.1.md`
-
-## Coordination rule
-
-ANCHOR reports progress and emergency evidence to TRUSS through CORE coordination
-contracts. ANCHOR does not select, own, or directly invoke BOLTS in production orchestration.
-Legacy injected connector support is retained temporarily for compatibility only and MUST
-not be wired by TRUSS.
+- ANCHORはWeighted A*系Heuristicを部品として使用する。
+- 固定複数Sessionを常時実行してはならない。
+- 単一主Sessionで開始し、Candidate発見後はMode契約に従って早期返却する。
+- Heuristic計算、観測、Region管理が探索Workを不必要に増幅してはならない。

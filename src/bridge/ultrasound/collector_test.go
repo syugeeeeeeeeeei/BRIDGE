@@ -62,7 +62,7 @@ func TestObservationModesSeparateAggregateAndTrace(t *testing.T) {
 		{Phase: "search", Kind: "action"},
 	}
 	aggregateSink := &MemorySink{}
-	aggregate := NewCollector("aggregate", aggregateSink)
+	aggregate := NewCollector("debug", aggregateSink)
 	traceSink := &MemorySink{}
 	trace := NewCollector("trace", traceSink)
 	for _, e := range events {
@@ -82,5 +82,44 @@ func TestObservationModesSeparateAggregateAndTrace(t *testing.T) {
 	}
 	if trace.Metrics().EventCount != 4 {
 		t.Fatalf("trace count=%d", trace.Metrics().EventCount)
+	}
+}
+
+func TestDebugCollectorDoesNotRetainActionStreamOrWriteSink(t *testing.T) {
+	sink := &MemorySink{}
+	c := NewCollector("debug", sink)
+	for i := 0; i < 10000; i++ {
+		c.Observe(bearing.Event{Phase: "search", Kind: "action", Action: "expand", LogicalStep: uint64(i + 1)})
+	}
+	c.Observe(bearing.Event{Component: "BOLTS", Phase: "search", Kind: "search_started"})
+	c.Observe(bearing.Event{Component: "BOLTS", Phase: "search", Kind: "search_finished"})
+	if err := c.Close(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	m := c.Metrics()
+	if m.EventCount != 2 {
+		t.Fatalf("event_count=%d", m.EventCount)
+	}
+	if m.SinkWriteNS != 0 {
+		t.Fatalf("sink_write_ns=%d", m.SinkWriteNS)
+	}
+	if len(sink.Events()) != 0 {
+		t.Fatalf("debug wrote %d trace events", len(sink.Events()))
+	}
+	if m.Summary.KindCounts["action"] != 0 {
+		t.Fatalf("action events were retained")
+	}
+}
+
+func TestDebugCollectorAggregatesFrontierWithoutTraceStorage(t *testing.T) {
+	c := NewCollector("debug", &MemorySink{})
+	c.Observe(bearing.Event{Component: "BOLTS", Phase: "dijkstra", Kind: "node_expanded", Attributes: map[string]any{"frontier_size": 7}})
+	c.Observe(bearing.Event{Component: "BOLTS", Phase: "dijkstra", Kind: "frontier_selected", Attributes: map[string]any{"frontier_size": 3}})
+	m := c.Metrics()
+	if m.DebugSummary.MaxFrontierSize != 7 {
+		t.Fatalf("max_frontier_size=%d", m.DebugSummary.MaxFrontierSize)
+	}
+	if m.DebugSummary.ComponentEventCounts["BOLTS"] != 2 {
+		t.Fatalf("component events=%v", m.DebugSummary.ComponentEventCounts)
 	}
 }

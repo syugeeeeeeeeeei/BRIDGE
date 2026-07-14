@@ -1,7 +1,6 @@
 package main
 
 import (
-	"archive/zip"
 	"bytes"
 	"os"
 	"path/filepath"
@@ -33,7 +32,7 @@ func TestRouteStdin(t *testing.T) {
 func TestBenchmarkValidateRejectsInvalidScenario(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.json")
-	data := `{"schema_version":"bridge.benchmark.v2","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":2},"algorithms":["bridge"],"observation_config":{"level":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}]}`
+	data := `{"schema_version":"bridge.benchmark.v3","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1]},"algorithms":["bridge"],"observation":{"mode":"invalid"},"output":{"directory":"artifacts"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"queries":[{"id":"default","selection":{"method":"generator_default"}}]}]}`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -46,7 +45,7 @@ func TestBenchmarkValidateRejectsInvalidScenario(t *testing.T) {
 func TestBenchmarkRunReturnsSuccessWithoutTrafficSideAcceptance(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "run.json")
-	data := `{"schema_version":"bridge.benchmark.v2","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1],"jobs":1},"algorithms":["bridge"],"observation_config":{"level":"off"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}]}`
+	data := `{"schema_version":"bridge.benchmark.v3","suite":{"id":"x"},"execution":{"repetitions":1,"seeds":[1]},"algorithms":["bridge"],"observation":{"mode":"minimum"},"output":{"directory":"artifacts"},"scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"queries":[{"id":"default","selection":{"method":"generator_default"}}]}]}`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -103,13 +102,13 @@ func TestBenchmarkRunCreatesArchiveInOutputDir(t *testing.T) {
 	outputDir := filepath.Join(dir, "benchmark-comparison-heavy-v2")
 	path := filepath.Join(dir, "bench.json")
 	data := `{
-  "schema_version":"bridge.benchmark.v2",
+  "schema_version":"bridge.benchmark.v3",
   "suite":{"id":"zip-test"},
-  "execution":{"repetitions":1,"seeds":[1],"jobs":1},
+  "execution":{"repetitions":1,"seeds":[1]},
   "algorithms":["bridge"],
-  "observation_config":{"level":"off"},
-  "output":{"output_dir":"` + filepath.ToSlash(outputDir) + `","artifact_id":"benchmark-comparison-heavy-v2","save_raw_results":true},
-  "scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"endpoints":{"query_selection_method":"generator_default_endpoints"}}]
+  "observation":{"mode":"minimum"},
+  "output":{"directory":"` + filepath.ToSlash(outputDir) + `"},
+  "scenarios":[{"id":"c","graph":{"generator":"grid","requested_node_count":5,"topology":"open"},"queries":[{"id":"default","selection":{"method":"generator_default"}}]}]
 }`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
 		t.Fatal(err)
@@ -118,16 +117,11 @@ func TestBenchmarkRunCreatesArchiveInOutputDir(t *testing.T) {
 	if code := run([]string{"benchmark", path}, strings.NewReader(""), &out, &errOut); code != 0 {
 		t.Fatalf("code=%d err=%s out=%s", code, errOut.String(), out.String())
 	}
-	archivePath := filepath.Join(outputDir, "benchmark-comparison-heavy-v2.zip")
-	if _, err := os.Stat(archivePath); err != nil {
-		t.Fatalf("archive missing: %v", err)
-	}
-	archive, err := zip.OpenReader(archivePath)
+	entries, err := os.ReadDir(filepath.Join(outputDir, "zip-test"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer archive.Close()
-	if len(archive.File) == 0 {
-		t.Fatal("archive is empty")
+	if len(entries) != 1 || !entries[0].IsDir() {
+		t.Fatalf("execution directory missing: %v", entries)
 	}
 }

@@ -63,7 +63,7 @@ func TestLoadDatasetCapturesProvenance(t *testing.T) {
 
 func TestDatasetScenarioPersistsMetadata(t *testing.T) {
 	path := filepath.Join("..", "..", "..", "tests", "datasets", "tiny-road-network.json")
-	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "phase5-dataset"}, Execution: ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1}, Algorithms: []string{"dijkstra"}, Observation: ObservationSpec{Mode: "off", SampleRate: 1}, Scenarios: []ScenarioCase{{ID: "dataset", Graph: GeneratorSpec{Generator: "dataset", DatasetPath: path, DatasetFormat: "bridge.dataset.v1.json"}, Queries: []QuerySpec{{ID: "default", Strategy: "generator_default_endpoints"}}, Route: RouteSpec{Mode: "exact", Workers: 1}}}}
+	s := BenchmarkScenario{SchemaVersion: BenchmarkSchemaV1, Suite: SuiteSpec{ID: "phase5-dataset"}, Execution: ExecutionSpec{Repetitions: 1, Seeds: []int64{1}}, Algorithms: []string{"dijkstra"}, Observation: ObservationSpec{Mode: "minimum"}, Scenarios: []ScenarioCase{{ID: "dataset", Graph: GeneratorSpec{Generator: "dataset", DatasetPath: path, DatasetFormat: "bridge.dataset.v1.json"}, Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}}, Route: RouteSpec{Mode: "exact", Workers: 1}}}}
 	result, err := RunScenario(context.Background(), s)
 	if err != nil {
 		t.Fatal(err)

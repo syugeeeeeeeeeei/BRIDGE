@@ -1,66 +1,50 @@
 # BOLTS コンポーネント規則
 
 **対象package:** `src/bridge/bolts`  
+**対象版:** v0.15.0以降  
 **状態:** 規範文書
 
-## 1. 目的
+## 1. 責務
 
-BOLTSは、交換可能な補助solver群を担当する。
+BOLTSはCapabilityベースの局所・補助solver群を所有する。
 
-## 2. 所有する責務
+- `CONNECT_CHECKPOINTS`
+- `ESCAPE_REGION`
+- `REPAIR_SEGMENT`
+- `PROVE_UNREACHABLE`
+- `TIGHTEN_BOUND`
+- `CERTIFY_CANDIDATE`
+- Dijkstra、双方向Dijkstra、A*、Weighted A*、Reachability
 
-- Dijkstra/双方向Dijkstra/A*
-- reachability
-- fallback、detour、repair
-- lower bound、certification
-- Work/Step報告
-
-## 3. 禁止する責務
+## 2. 禁止事項
 
 - portfolio scheduling
-- 他のBOLTS solverの連鎖起動
-- ANCHOR継続判断
+- ANCHORの継続判断
+- 他solverの連鎖起動
 - GATEへの直接公開
+- Reachability結果のOptimality昇格
 
-## 4. 依存規則
+## 3. Reachability契約
 
-`CORE`と`BEARING`に依存できる。
+Reachability Solverは到達可能性または到達不能を判定する。重み付き最短路を保証しない。
 
-`others/legacy/bridge_py`へ依存してはならない。package間循環依存を作ってはならない。
+- path発見: `reachability_proven=true`, `optimality_proven=false`
+- 完全探索による到達不能: `search_completed=true`, `reachability_proven=true`, `optimality_proven=false`
+- 予算不足・cancel: 証明未完了
 
-## 5. Go実装規則
+全終了経路でsolver timingを記録する。
 
-- 公開型・関数にはGoDocを付ける
-- errorをpanicへ変換しない
-- 大規模処理で不要なallocationを増やさない
-- map iteration順に結果を依存させない
-- WorkとStepは`docs/WORD_DEFINITION.md`の意味で計測する
-- cancellationとdeadlineを区別する
+## 4. Evidence規則
 
-## 6. 不変条件
+- EvidenceはCapabilityの実行事実とScopeに基づいて生成する
+- empirical値をadmissible lower bound、unreachable、exactへ昇格しない
+- `GeneratedWork`は実際のledgerと一致させる
+- Scope外での再利用を許可しない
 
-- budget超過を発生させない
-- 同一入力では決定論的な結果を返す
-- observer有効・無効で探索結果を変えない
-- public contractにprivate stateを漏らさない
+## 5. 必須テスト
 
-## 7. 必須テスト
-
-- 単体テスト
-- budget境界テスト
-- cancellationテスト
-- 決定論性テスト
-- architecture dependencyテスト
-- 該当する場合はPython-Go paired test
-
-## 8. 関連文書
-
-- `docs/ARCHITECTURE_RULE.md`
-- `docs/WORD_DEFINITION.md`
-- `docs/architecture/BRIDGE_architecture_spec_v0.0.1.md`
-
-## Coordination rule
-
-BOLTS is a major BRIDGE component parallel to TRUSS and ANCHOR. It is started and
-budgeted by TRUSS. BOLTS does not depend on ANCHOR and does not decide portfolio-level
-switching. Internal solver selection remains a BOLTS responsibility.
+- 全Capability契約テスト
+- Reachability証明意味論テスト
+- 全終了経路Timingテスト
+- Work grant境界テスト
+- Evidence validation negative test

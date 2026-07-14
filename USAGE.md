@@ -1050,3 +1050,53 @@ console.log(response.result);
 ```
 
 両SDKは実行環境に対応した同梱バイナリを使用します。解決順は明示パス、`BRIDGE_BINARY`、同梱版、PATHです。ネットワークからの自動ダウンロード、暗黙のTrace保存、APIサーバー提供は行いません。APIサーバーはSDKをFastAPI、Flask、Express、Fastify等へ組み込んで利用者が構築します。
+
+---
+
+## 11. v0.15.0の結果意味論とベンチマーク注意事項
+
+### 11.1 終了状態
+
+`termination_status`は排他的な終了理由です。
+
+- `FOUND`
+- `UNREACHABLE`
+- `UNKNOWN_BUDGET`
+- `CANCELLED`
+- `DEADLINE_EXCEEDED`
+- `INVALID_REQUEST`
+
+`budget_exhausted`や`found`だけから終了理由を再推定しないでください。
+
+### 11.2 到達可能性と最適性
+
+`reachability_proven`と`optimality_proven`は別の証明です。
+
+Reachability Solverが経路を返した場合、到達可能性は証明されますが、重み付き最短路の最適性は証明されません。性能評価では、次を分けて確認してください。
+
+- 経路が見つかったか
+- 到達可能性または到達不能が証明されたか
+- 返却経路の最適性が証明されたか
+- Exact Referenceと一致したか
+
+### 11.3 Work Model v2
+
+総Workにはsolver内部Actionに加え、Hypothesis管理、Scheduling、Handoff、Evidence処理の制御Workが含まれます。
+
+```text
+全Solver Work + 全Control Work <= Work Budget
+```
+
+壁時計時間、Trace保存、JSON出力、GCはWorkへ含まれません。
+
+### 11.4 Warm-up
+
+Warm-upは本計測、raw測定Run、acceptance判定から除外されます。v0.15.0ではWarm-up中のObservation、Collector、Trace保存も無効化されます。
+
+### 11.5 Timingの採否
+
+`timing_valid=false`のRunを速度比較へ使用しないでください。`timing_valid=true`にもかかわらずsolver時間が0の場合、TRAFFICはRunを不正として拒否します。
+
+### 11.6 fail-closed検査
+
+TRAFFICは証明、終了状態、Path、Timingに矛盾があるRunを補正せず失敗させます。研究結果を作成する際は、Run数だけでなく不変条件違反が0件であることを確認してください。

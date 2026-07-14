@@ -60,7 +60,7 @@ func Analyze(ctx context.Context, artifact traffic.BenchmarkResult, profile Heal
 	}
 	payload, _ := json.Marshal(artifact)
 	sum := sha256.Sum256(payload)
-	out := HealthCheckResult{SchemaVersion: ResultSchemaV1, SourceArtifactID: artifact.ArtifactID, SourceSchemaVersion: artifact.SchemaVersion, SourceArtifactSHA256: hex.EncodeToString(sum[:]), GeneratedAt: time.Now().UTC().Format(time.RFC3339Nano), Profile: profile}
+	out := HealthCheckResult{SchemaVersion: ResultSchemaV1, SourceArtifactID: artifact.ExecutionID, SourceSchemaVersion: artifact.SchemaVersion, SourceArtifactSHA256: hex.EncodeToString(sum[:]), GeneratedAt: time.Now().UTC().Format(time.RFC3339Nano), Profile: profile}
 	validByRun := map[string]bool{}
 	for _, run := range artifact.Runs {
 		if run.RunMetadata.WarmupRun {
@@ -244,7 +244,7 @@ func workEquivalent(a, b core.WorkMetrics) bool {
 
 func validateExact(ctx context.Context, g core.Graph, run traffic.BenchmarkRun, p HealthProfile) ExactValidation {
 	in := graphInput(g)
-	res, err := gate.NewRouter().ExecuteOnce(ctx, gate.ExecuteRequest{SchemaVersion: gate.ExecuteRequestSchemaV1, Target: gate.ExecuteTargetInput{ID: p.ExactReferenceAlgorithm}, Graph: in, Route: gate.RouteInput{Source: uint32(run.QueryProfile.Source), Target: uint32(run.QueryProfile.Target), Mode: core.ModeExact, Workers: 1}, Observation: gate.ObservationInput{Mode: gate.ObservationOff}}, gate.RouteOptions{})
+	res, err := gate.NewRouter().ExecuteOnce(ctx, gate.ExecuteRequest{SchemaVersion: gate.ExecuteRequestSchemaV1, Target: gate.ExecuteTargetInput{ID: p.ExactReferenceAlgorithm}, Graph: in, Route: gate.RouteInput{Source: uint32(run.QueryProfile.Source), Target: uint32(run.QueryProfile.Target), Mode: core.ModeExact, Workers: 1}, Observation: gate.ObservationInput{Mode: gate.ObservationMinimum}}, gate.RouteOptions{})
 	if err != nil {
 		return ExactValidation{Verifiable: false, ExactClaimValid: !run.ExecutionResult.OptimalityProven}
 	}

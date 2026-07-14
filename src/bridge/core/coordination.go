@@ -6,6 +6,7 @@ type Component string
 const (
 	ComponentAnchor Component = "ANCHOR"
 	ComponentBolts  Component = "BOLTS"
+	ComponentTruss  Component = "TRUSS"
 )
 
 type ProgressState string

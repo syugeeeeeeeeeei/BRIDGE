@@ -1,0 +1,3 @@
+suite_id,scenario_id,algorithm,query_id,runs,path_found_rate,optimality_proven_rate,mean_path_cost,mean_work_actions,mean_solver_time_ms,mean_end_to_end_time_ms
+h,g,anchor,q,1,1,1,4.0922711137069125,90,0.032308000000000003,0.056069000000000001
+h,g,dijkstra,q,1,1,1,4.0716630727683913,88,0.034007000000000003,0.37245299999999998

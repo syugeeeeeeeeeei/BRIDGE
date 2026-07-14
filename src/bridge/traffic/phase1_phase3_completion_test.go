@@ -12,12 +12,12 @@ func oneRunScenario(mode string) BenchmarkScenario {
 	s.Execution.Repetitions = 1
 	s.Execution.Seeds = []int64{7}
 	s.Algorithms = []string{"bridge"}
-	s.Observation = ObservationSpec{Mode: mode, SampleRate: 1}
+	s.Observation = ObservationSpec{Mode: mode}
 	return s
 }
 
 func TestObservationModesPreserveStableDigestAndSummaryIsCollectedWithoutTrace(t *testing.T) {
-	modes := []string{"off", "aggregate", "trace"}
+	modes := []string{"minimum", "debug", "trace"}
 	var expected string
 	for _, mode := range modes {
 		result, err := RunScenario(context.Background(), oneRunScenario(mode))
@@ -34,18 +34,18 @@ func TestObservationModesPreserveStableDigestAndSummaryIsCollectedWithoutTrace(t
 		if run.RunMetadata.StableDigest != expected {
 			t.Fatalf("mode %s changed stable digest: %s != %s", mode, run.RunMetadata.StableDigest, expected)
 		}
-		if mode == "off" && run.Observations.ObservationData != nil {
+		if mode == "minimum" && run.Observations.ObservationData != nil {
 			t.Fatalf("off must not return observation")
 		}
 		observation, _ := run.Observations.ObservationData.(*gate.ObservationResult)
-		if mode != "off" && (observation == nil || observation.EventCount == 0) {
+		if mode != "minimum" && (observation == nil || observation.EventCount == 0) {
 			t.Fatalf("%s did not collect observation", mode)
 		}
 	}
 }
 
 func TestRawRunsRecomputeQuerySummary(t *testing.T) {
-	s := oneRunScenario("off")
+	s := oneRunScenario("minimum")
 	s.Execution.Repetitions = 3
 	result, err := RunScenario(context.Background(), s)
 	if err != nil {
@@ -67,7 +67,7 @@ func TestRawRunsRecomputeQuerySummary(t *testing.T) {
 }
 
 func TestExecutionManifestMatchesRawRunOrder(t *testing.T) {
-	s := oneRunScenario("off")
+	s := oneRunScenario("minimum")
 	s.Execution.Repetitions = 2
 	s.Execution.RandomizeOrder = true
 	result, err := RunScenario(context.Background(), s)

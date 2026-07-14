@@ -2,6 +2,7 @@ package traffic
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/core"
@@ -20,15 +22,15 @@ import (
 	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/ultrasound"
 )
 
-const BenchmarkSchemaV1 = "bridge.benchmark.v2"
-const BenchmarkResultSchemaV1 = "bridge.benchmark.artifact.v2"
+const BenchmarkSchemaV1 = "bridge.benchmark.v3"
+const BenchmarkResultSchemaV1 = "bridge.benchmark.artifact.v3"
 
 type BenchmarkScenario struct {
 	SchemaVersion string          `json:"schema_version" yaml:"schema_version"`
 	Suite         SuiteSpec       `json:"suite" yaml:"suite"`
 	Execution     ExecutionSpec   `json:"execution" yaml:"execution"`
 	Algorithms    []string        `json:"algorithms" yaml:"algorithms"`
-	Observation   ObservationSpec `json:"observation_config,omitempty" yaml:"observation_config,omitempty"`
+	Observation   ObservationSpec `json:"observation" yaml:"observation"`
 	Output        OutputSpec      `json:"output,omitempty" yaml:"output,omitempty"`
 	Scenarios     []ScenarioCase  `json:"scenarios" yaml:"scenarios"`
 }
@@ -41,38 +43,32 @@ type ExecutionSpec struct {
 	Repetitions    int     `json:"repetitions" yaml:"repetitions"`
 	WarmupRuns     int     `json:"warmup_runs,omitempty" yaml:"warmup_runs,omitempty"`
 	Seeds          []int64 `json:"seeds" yaml:"seeds"`
-	Jobs           int     `json:"jobs,omitempty" yaml:"jobs,omitempty"`
-	Timeout        string  `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	RunTimeout     string  `json:"run_timeout,omitempty" yaml:"run_timeout,omitempty"`
 	RandomizeOrder bool    `json:"randomize_order,omitempty" yaml:"randomize_order,omitempty"`
 }
 type ObservationSpec struct {
-	Mode       string  `json:"level,omitempty" yaml:"level,omitempty"`
-	SampleRate float64 `json:"sample_rate,omitempty" yaml:"sample_rate,omitempty"`
+	Mode string `json:"mode" yaml:"mode"`
 }
 type OutputSpec struct {
-	OutputDir          string            `json:"output_dir,omitempty" yaml:"output_dir,omitempty"`
-	ArtifactID         string            `json:"artifact_id,omitempty" yaml:"artifact_id,omitempty"`
-	SaveRawResults     bool              `json:"save_raw_results,omitempty" yaml:"save_raw_results,omitempty"`
-	SaveGraphSnapshot  bool              `json:"save_graph_snapshot,omitempty" yaml:"save_graph_snapshot,omitempty"`
-	SaveTrace          bool              `json:"save_trace,omitempty" yaml:"save_trace,omitempty"`
-	CaptureEnvironment bool              `json:"capture_environment,omitempty" yaml:"capture_environment,omitempty"`
-	Metadata           map[string]string `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	Directory string `json:"directory" yaml:"directory"`
 }
 type ScenarioCase struct {
-	ID        string        `json:"id" yaml:"id"`
-	Graph     GeneratorSpec `json:"graph" yaml:"graph"`
-	Endpoints EndpointSpec  `json:"endpoints,omitempty" yaml:"endpoints,omitempty"`
-	Queries   []QuerySpec   `json:"queries,omitempty" yaml:"queries,omitempty"`
-	Route     RouteSpec     `json:"route,omitempty" yaml:"route,omitempty"`
-	Budget    BudgetSpec    `json:"budget,omitempty" yaml:"budget,omitempty"`
-	Ablation  AblationSpec  `json:"ablation,omitempty" yaml:"ablation,omitempty"`
+	ID       string        `json:"id" yaml:"id"`
+	Graph    GeneratorSpec `json:"graph" yaml:"graph"`
+	Queries  []QuerySpec   `json:"queries,omitempty" yaml:"queries,omitempty"`
+	Route    RouteSpec     `json:"route,omitempty" yaml:"route,omitempty"`
+	Budget   BudgetSpec    `json:"budget,omitempty" yaml:"budget,omitempty"`
+	Ablation AblationSpec  `json:"ablation,omitempty" yaml:"ablation,omitempty"`
 }
 
 type QuerySpec struct {
-	ID       string  `json:"id" yaml:"id"`
-	Strategy string  `json:"query_selection_method,omitempty" yaml:"query_selection_method,omitempty"`
-	Source   *uint32 `json:"source,omitempty" yaml:"source,omitempty"`
-	Target   *uint32 `json:"target,omitempty" yaml:"target,omitempty"`
+	ID        string             `json:"id" yaml:"id"`
+	Selection QuerySelectionSpec `json:"selection" yaml:"selection"`
+}
+type QuerySelectionSpec struct {
+	Method string  `json:"method" yaml:"method"`
+	Source *uint32 `json:"source,omitempty" yaml:"source,omitempty"`
+	Target *uint32 `json:"target,omitempty" yaml:"target,omitempty"`
 }
 type GeneratorSpec struct {
 	Generator     string  `json:"generator" yaml:"generator"`
@@ -86,26 +82,23 @@ type GeneratorSpec struct {
 	DatasetPath   string  `json:"dataset_path,omitempty" yaml:"dataset_path,omitempty"`
 	DatasetFormat string  `json:"dataset_format,omitempty" yaml:"dataset_format,omitempty"`
 }
-type EndpointSpec struct {
-	Strategy string  `json:"query_selection_method" yaml:"query_selection_method"`
-	Source   *uint32 `json:"source,omitempty" yaml:"source,omitempty"`
-	Target   *uint32 `json:"target,omitempty" yaml:"target,omitempty"`
-}
 type RouteSpec struct {
-	Mode    core.RouteMode `json:"route_mode,omitempty" yaml:"route_mode,omitempty"`
-	Workers int            `json:"logical_worker_count,omitempty" yaml:"logical_worker_count,omitempty"`
+	Mode                 core.RouteMode `json:"mode,omitempty" yaml:"mode,omitempty"`
+	Workers              int            `json:"logical_worker_count,omitempty" yaml:"logical_worker_count,omitempty"`
+	HandoffWorkThreshold *uint64        `json:"handoff_work_threshold,omitempty" yaml:"handoff_work_threshold,omitempty"`
 }
 type AblationSpec = core.AblationOptions
 
 type BudgetSpec struct {
-	TotalWork *uint64  `json:"total_work,omitempty" yaml:"total_work,omitempty"`
-	TimeoutMS *float64 `json:"timeout_ms,omitempty" yaml:"timeout_ms,omitempty"`
+	WorkLimit       *uint64 `json:"work_limit,omitempty" yaml:"work_limit,omitempty"`
+	SearchTimeLimit string  `json:"search_time_limit,omitempty" yaml:"search_time_limit,omitempty"`
 }
 type BenchmarkResult struct {
 	SchemaVersion      string               `json:"schema_version"`
 	TerminologyVersion string               `json:"terminology_version"`
 	SuiteID            string               `json:"suite_id"`
-	ArtifactID         string               `json:"artifact_id,omitempty"`
+	ExecutionID        string               `json:"execution_id"`
+	OutputDirectory    string               `json:"output_directory"`
 	RunMetadata        ArtifactRunMetadata  `json:"run_metadata"`
 	Execution          ExecutionManifest    `json:"execution"`
 	Environment        *EnvironmentMetadata `json:"environment,omitempty"`
@@ -115,14 +108,12 @@ type BenchmarkResult struct {
 }
 
 type ArtifactRunMetadata struct {
-	ScenarioSchemaVersion string            `json:"scenario_schema_version"`
-	StartedAt             string            `json:"started_at"`
-	CompletedAt           string            `json:"completed_at,omitempty"`
-	DurationMS            float64           `json:"duration_ms"`
-	ExecutionSucceeded    bool              `json:"execution_succeeded"`
-	ObservationMode       string            `json:"observation_mode"`
-	ObservationSampleRate float64           `json:"observation_sample_rate,omitempty"`
-	OutputMetadata        map[string]string `json:"output_metadata,omitempty"`
+	ScenarioSchemaVersion string  `json:"scenario_schema_version"`
+	StartedAt             string  `json:"started_at"`
+	CompletedAt           string  `json:"completed_at,omitempty"`
+	DurationMS            float64 `json:"duration_ms"`
+	ExecutionSucceeded    bool    `json:"execution_succeeded"`
+	ObservationMode       string  `json:"observation_mode"`
 }
 type ExecutionManifest struct {
 	Randomized       bool     `json:"randomized"`
@@ -156,23 +147,21 @@ type ScenarioSummary struct {
 }
 
 func (s *BenchmarkScenario) ApplyDefaults() {
+	if s.Output.Directory == "" {
+		s.Output.Directory = "./artifacts"
+	}
 	if s.Execution.Repetitions == 0 {
 		s.Execution.Repetitions = 1
 	}
 	if len(s.Execution.Seeds) == 0 {
 		s.Execution.Seeds = []int64{1}
 	}
-	if s.Execution.Jobs == 0 {
-		s.Execution.Jobs = 1
-	}
-	if s.Observation.SampleRate == 0 {
-		s.Observation.SampleRate = 1
-	}
+
 	if len(s.Algorithms) == 0 {
 		s.Algorithms = []string{"bridge"}
 	}
 	if s.Observation.Mode == "" {
-		s.Observation.Mode = "off"
+		s.Observation.Mode = "minimum"
 	}
 	for i := range s.Scenarios {
 		if s.Scenarios[i].Graph.Generator == "" {
@@ -181,12 +170,12 @@ func (s *BenchmarkScenario) ApplyDefaults() {
 		if s.Scenarios[i].Graph.Topology == "" {
 			s.Scenarios[i].Graph.Topology = "open"
 		}
-		if len(s.Scenarios[i].Queries) == 0 && s.Scenarios[i].Endpoints.Strategy == "" {
-			s.Scenarios[i].Endpoints.Strategy = "generator_default_endpoints"
+		if len(s.Scenarios[i].Queries) == 0 {
+			s.Scenarios[i].Queries = []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}}
 		}
 		for q := range s.Scenarios[i].Queries {
-			if s.Scenarios[i].Queries[q].Strategy == "" {
-				s.Scenarios[i].Queries[q].Strategy = "generator_default_endpoints"
+			if s.Scenarios[i].Queries[q].Selection.Method == "" {
+				s.Scenarios[i].Queries[q].Selection.Method = "generator_default"
 			}
 		}
 		if s.Scenarios[i].Route.Mode == "" {
@@ -214,27 +203,21 @@ func (s BenchmarkScenario) Validate() error {
 	if len(s.Execution.Seeds) == 0 {
 		return errors.New("execution.seeds must not be empty")
 	}
-	if s.Execution.Jobs != 1 {
-		return errors.New("execution.jobs must be 1 in v0.12.1")
-	}
-	if s.Execution.Timeout != "" {
-		if _, err := time.ParseDuration(s.Execution.Timeout); err != nil {
-			return fmt.Errorf("execution.timeout: %w", err)
+	if s.Execution.RunTimeout != "" {
+		if _, err := time.ParseDuration(s.Execution.RunTimeout); err != nil {
+			return fmt.Errorf("execution.run_timeout: %w", err)
 		}
 	}
 	switch s.Observation.Mode {
-	case "off", "aggregate", "trace":
+	case "minimum", "debug", "trace":
 	default:
-		return fmt.Errorf("observation_config.level must be one of off, aggregate, trace")
+		return fmt.Errorf("observation.mode must be one of minimum, debug, trace")
 	}
-	if s.Observation.SampleRate <= 0 || s.Observation.SampleRate > 1 {
-		return errors.New("observation.sample_rate must be > 0 and <= 1")
+	if s.Output.Directory == "" {
+		return errors.New("output.directory is required")
 	}
-	if s.Output.OutputDir == "" && (s.Output.SaveRawResults || s.Output.SaveGraphSnapshot || s.Output.SaveTrace) {
-		return errors.New("output.output_dir is required when output.save_raw_results, output.save_graph_snapshot, or output.save_trace is enabled")
-	}
-	if s.Output.SaveTrace && s.Observation.Mode == "off" {
-		return errors.New("observation_config.level must not be off when output.save_trace is enabled")
+	if err := validateSafeID("suite.id", s.Suite.ID); err != nil {
+		return err
 	}
 	for _, c := range s.Scenarios {
 		if c.Ablation.DisableDetour || c.Ablation.DisableBudgetReallocation || c.Ablation.DisableStateReuse {
@@ -300,13 +283,13 @@ func (s BenchmarkScenario) Validate() error {
 				return fmt.Errorf("scenario %q: duplicate query id %q", c.ID, q.ID)
 			}
 			queryIDs[q.ID] = true
-			if q.Strategy != "generator_default_endpoints" && q.Strategy != "explicit_endpoints" {
-				return fmt.Errorf("scenario %q query %q: unsupported query_selection_method", c.ID, q.ID)
+			if q.Selection.Method != "generator_default" && q.Selection.Method != "explicit" {
+				return fmt.Errorf("scenario %q query %q: unsupported selection.method", c.ID, q.ID)
 			}
-			if q.Strategy == "explicit_endpoints" && (q.Source == nil || q.Target == nil) {
-				return fmt.Errorf("scenario %q query %q: explicit_endpoints requires source and target", c.ID, q.ID)
+			if q.Selection.Method == "explicit" && (q.Selection.Source == nil || q.Selection.Target == nil) {
+				return fmt.Errorf("scenario %q query %q: explicit requires source and target", c.ID, q.ID)
 			}
-			if q.Strategy == "explicit_endpoints" && (int(*q.Source) >= nodeCount || int(*q.Target) >= nodeCount) {
+			if q.Selection.Method == "explicit" && (int(*q.Selection.Source) >= nodeCount || int(*q.Selection.Target) >= nodeCount) {
 				return fmt.Errorf("scenario %q query %q: endpoint is outside graph node range 0..%d", c.ID, q.ID, nodeCount-1)
 			}
 		}
@@ -318,11 +301,20 @@ func (s BenchmarkScenario) Validate() error {
 		if c.Route.Workers < 1 {
 			return fmt.Errorf("scenario %q: route.logical_worker_count must be >= 1", c.ID)
 		}
-		if c.Budget.TotalWork != nil && *c.Budget.TotalWork == 0 {
-			return fmt.Errorf("scenario %q: budget.total_work must be > 0", c.ID)
+		if c.Budget.WorkLimit != nil && *c.Budget.WorkLimit == 0 {
+			return fmt.Errorf("scenario %q: budget.work_limit must be > 0", c.ID)
 		}
-		if c.Budget.TimeoutMS != nil && *c.Budget.TimeoutMS <= 0 {
-			return fmt.Errorf("scenario %q: budget.timeout_ms must be > 0", c.ID)
+		if c.Budget.SearchTimeLimit != "" {
+			d, err := time.ParseDuration(c.Budget.SearchTimeLimit)
+			if err != nil || d <= 0 {
+				return fmt.Errorf("scenario %q: budget.search_time_limit must be a positive duration", c.ID)
+			}
+			if s.Execution.RunTimeout != "" {
+				rt, _ := time.ParseDuration(s.Execution.RunTimeout)
+				if rt < d {
+					return fmt.Errorf("scenario %q: execution.run_timeout must be >= budget.search_time_limit", c.ID)
+				}
+			}
 		}
 		if c.Graph.Noise < 0 {
 			return fmt.Errorf("scenario %q: graph.edge_weight_noise must be >= 0", c.ID)
@@ -456,8 +448,7 @@ func scenarioNodeCount(spec GeneratorSpec) (int, error) {
 }
 
 type RunScenarioOptions struct {
-	TraceDir         string
-	Overwrite        bool
+	ScenarioPath     string
 	ProgressReporter ProgressReporter
 }
 
@@ -516,14 +507,11 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		SchemaVersion:      BenchmarkResultSchemaV1,
 		TerminologyVersion: TerminologyVersionV1,
 		SuiteID:            s.Suite.ID,
-		ArtifactID:         s.Output.ArtifactID,
 		RunMetadata: ArtifactRunMetadata{
 			ScenarioSchemaVersion: s.SchemaVersion,
 			StartedAt:             started.UTC().Format(time.RFC3339Nano),
 			ExecutionSucceeded:    true,
 			ObservationMode:       s.Observation.Mode,
-			ObservationSampleRate: s.Observation.SampleRate,
-			OutputMetadata:        s.Output.Metadata,
 		},
 	}
 	out.Execution = ExecutionManifest{Randomized: s.Execution.RandomizeOrder, RunOrder: []string{}}
@@ -531,14 +519,26 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		out.Execution.ShuffleSeed = s.Execution.Seeds[0]
 		out.Execution.ShuffleAlgorithm = "math/rand-v1"
 	}
-	if s.Output.CaptureEnvironment {
-		out.Environment = captureEnvironment()
+	out.Environment = captureEnvironment()
+	executionID, err := newExecutionID()
+	if err != nil {
+		return BenchmarkResult{}, err
 	}
+	baseDirectory := s.Output.Directory
+	if !filepath.IsAbs(baseDirectory) && opts.ScenarioPath != "" {
+		baseDirectory = filepath.Join(filepath.Dir(opts.ScenarioPath), baseDirectory)
+	}
+	executionDirectory := filepath.Join(baseDirectory, s.Suite.ID, executionID)
+	if err := os.MkdirAll(executionDirectory, 0o755); err != nil {
+		return BenchmarkResult{}, err
+	}
+	out.ExecutionID = executionID
+	out.OutputDirectory = executionDirectory
 	plans := expandRunPlans(s)
 	completedRuns := 0
 	var timeout time.Duration
-	if s.Execution.Timeout != "" {
-		timeout, _ = time.ParseDuration(s.Execution.Timeout)
+	if s.Execution.RunTimeout != "" {
+		timeout, _ = time.ParseDuration(s.Execution.RunTimeout)
 	}
 	type accumulator struct {
 		result                                  ScenarioSummary
@@ -572,29 +572,36 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			return out, err
 		}
 		var source, target uint32
-		if query.Strategy == "explicit_endpoints" {
-			source, target = *query.Source, *query.Target
+		if query.Selection.Method == "explicit" {
+			source, target = *query.Selection.Source, *query.Selection.Target
 		} else {
 			source, target = uint32(defaultSource), uint32(defaultTarget)
 		}
 		requestID := fmt.Sprintf("%s-%s-%d-%s-%d", c.ID, algorithm, seed, query.ID, rep)
-		req := gate.RouteRequest{SchemaVersion: gate.RouteRequestSchemaV1, RequestID: requestID, Graph: graphToInput(g), Route: gate.RouteInput{Source: source, Target: target, Mode: c.Route.Mode, Workers: c.Route.Workers, Seed: uint64(seed)}, Budget: gate.BudgetInput{TotalWork: c.Budget.TotalWork, TimeoutMS: c.Budget.TimeoutMS}, Observation: gate.ObservationInput{Mode: gate.ObservationMode(s.Observation.Mode), SampleRate: &s.Observation.SampleRate}, Ablation: c.Ablation}
+		effectiveObservationMode := s.Observation.Mode
+		// Warmups exist only to stabilize code/data paths. Recording traces or
+		// collector state during warmup adds measurement overhead, writes data
+		// that is discarded, and can dominate large scenarios.
+		if plan.Warmup {
+			effectiveObservationMode = "minimum"
+		}
+		req := gate.RouteRequest{SchemaVersion: gate.RouteRequestSchemaV1, RequestID: requestID, Graph: graphToInput(g), Route: gate.RouteInput{Source: source, Target: target, Mode: c.Route.Mode, Workers: c.Route.Workers, Seed: uint64(seed), HandoffWorkThreshold: c.Route.HandoffWorkThreshold}, Budget: gate.BudgetInput{TotalWork: c.Budget.WorkLimit, TimeoutMS: durationMillisecondsPointer(c.Budget.SearchTimeLimit)}, Observation: gate.ObservationInput{Mode: gate.ObservationMode(effectiveObservationMode)}, Ablation: c.Ablation}
 		runCtx := ctx
 		cancel := func() {}
 		if timeout > 0 {
 			runCtx, cancel = context.WithTimeout(ctx, timeout)
 		}
-		traceBaseDir := opts.TraceDir
-		if traceBaseDir == "" && s.Output.SaveTrace {
-			traceBaseDir = filepath.Join(s.Output.OutputDir, c.ID, runDirName)
+		traceBaseDir := ""
+		if effectiveObservationMode == "trace" {
+			traceBaseDir = filepath.Join(executionDirectory, "traces", runDirName)
 		}
 		var collector *ultrasound.Collector
 		var tracePath string
-		if s.Observation.Mode != "off" {
+		if effectiveObservationMode != "off" {
 			var sink ultrasound.EventSink = ultrasound.DiscardSink{}
-			if traceBaseDir != "" && s.Observation.Mode == "trace" {
+			if traceBaseDir != "" && effectiveObservationMode == "trace" {
 				tracePath = filepath.Join(traceBaseDir, "trace.jsonl")
-				fs, sinkErr := ultrasound.NewFileSink(tracePath, opts.Overwrite)
+				fs, sinkErr := ultrasound.NewFileSink(tracePath, false)
 				if sinkErr != nil {
 					cancel()
 					stopProgress(false, completedRuns)
@@ -602,9 +609,9 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 				}
 				sink = fs
 			}
-			collector = ultrasound.NewCollectorConfigured(s.Observation.Mode, sink, 0, s.Observation.SampleRate, uint64(seed)^uint64(rep))
+			collector = ultrasound.NewCollector(effectiveObservationMode, sink)
 		}
-		obs := gate.ObservationOptions{Mode: gate.ObservationMode(s.Observation.Mode)}
+		obs := gate.ObservationOptions{Mode: gate.ObservationMode(effectiveObservationMode)}
 		if collector != nil {
 			obs.Observer = collector
 			obs.Reporter = collector
@@ -615,11 +622,13 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 		var memBefore, memAfter runtime.MemStats
 		runtime.ReadMemStats(&memBefore)
 		stopHeapSampling := startHeapSampler(false, memBefore.HeapAlloc)
+		apiStarted := time.Now()
 		if algorithm == "bridge" {
 			routeResult, err = router.Route(runCtx, req, gate.RouteOptions{Observation: obs})
 		} else {
 			executeResult, err = router.ExecuteOnce(runCtx, gate.ExecuteRequest{SchemaVersion: gate.ExecuteRequestSchemaV1, RequestID: requestID, Target: gate.ExecuteTargetInput{ID: algorithm}, Graph: req.Graph, Route: req.Route, Budget: req.Budget, Observation: req.Observation, Ablation: c.Ablation}, gate.RouteOptions{Observation: obs})
 		}
+		apiElapsedNS := time.Since(apiStarted).Nanoseconds()
 		runtime.ReadMemStats(&memAfter)
 		sampledPeak := stopHeapSampling()
 		var observationErr error
@@ -674,17 +683,15 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 				RouteConfiguration:     c.Route,
 				BudgetConfiguration:    c.Budget,
 				AblationConfiguration:  c.Ablation,
-				QuerySelectionMethod:   query.Strategy,
+				QuerySelectionMethod:   query.Selection.Method,
 				ObservationMode:        s.Observation.Mode,
-				ObservationSampleRate:  s.Observation.SampleRate,
-				OutputMetadata:         s.Output.Metadata,
 			},
 			GraphProfile: graphMeta,
 			QueryProfile: QueryProfile{
 				QueryID:              query.ID,
 				QuerySeed:            seed,
-				QueryHash:            queryStableHash(query.ID, query.Strategy, source, target, seed),
-				QuerySelectionMethod: query.Strategy,
+				QueryHash:            queryStableHash(query.ID, query.Selection.Method, source, target, seed),
+				QuerySelectionMethod: query.Selection.Method,
 				Source:               core.NodeID(source),
 				Target:               core.NodeID(target),
 			},
@@ -721,6 +728,8 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			raw.ExecutionResult.DuplicatedWorkRatio = routeResult.DuplicatedWorkRatio
 			raw.ExecutionResult.StateReuseRatio = routeResult.StateReuseRatio
 			raw.ExecutionResult.BudgetLedger = routeResult.BudgetLedger
+			raw.ExecutionResult.HandoffMetrics = routeResult.HandoffMetrics
+			raw.ExecutionResult.BottleneckProfile = routeResult.BottleneckProfile
 			raw.AlgorithmConfiguration.TargetKind = "system"
 			raw.AlgorithmConfiguration.ExecutionPath = "route"
 		} else {
@@ -748,8 +757,13 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			}
 		}
 		raw.ExecutionResult.PathFound = found
-		raw.ExecutionResult.SearchCompleted = found || errorCode == ""
-		raw.ExecutionResult.ReachabilityProven = found || errorCode == core.ErrNoPath
+		if algorithm == "bridge" {
+			raw.ExecutionResult.SearchCompleted = routeResult.SearchCompleted
+			raw.ExecutionResult.ReachabilityProven = routeResult.ReachabilityProven
+		} else {
+			raw.ExecutionResult.SearchCompleted = executeResult.SearchCompleted
+			raw.ExecutionResult.ReachabilityProven = executeResult.ReachabilityProven
+		}
 		raw.ExecutionResult.OptimalityProven = exact
 		raw.Measurement.Work = work
 		raw.Measurement.TimeBreakdown = timeBreakdown
@@ -760,16 +774,24 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			HeapAllocBefore: memBefore.HeapAlloc, HeapAllocAfter: memAfter.HeapAlloc,
 			HeapAllocBoundaryMax: maxUint64(memBefore.HeapAlloc, memAfter.HeapAlloc), HeapAllocSampledPeak: sampledPeak,
 		}
+		raw.Measurement.SolverTimeNS = timeBreakdown.SolverNS
+		raw.Measurement.EndToEndTimeNS = apiElapsedNS
 		raw.Measurement.SolverTimeMS = solverMS
-		raw.Measurement.EndToEndTimeMS = endMS
-		raw.Measurement.ZeroDuration = endMS == 0 || solverMS == 0
+		raw.Measurement.EndToEndTimeMS = float64(apiElapsedNS) / 1_000_000
+		raw.Measurement.ZeroDuration = apiElapsedNS <= 0
+		raw.Measurement.TimingValid = apiElapsedNS > 0
+		if timeBreakdown.SolverNS <= 0 {
+			raw.Measurement.TimingValid = false
+			raw.Measurement.TimingIssue = "solver boundary duration is zero; use repeated benchmark timing for solver ranking"
+		}
+		endMS = raw.Measurement.EndToEndTimeMS
 		raw.ExecutionResult.ErrorCode = errorCode
 		if raw.ExecutionResult.FailureReason == "" && !found {
 			raw.ExecutionResult.FailureReason = classifyFailure(errorCode, raw.Measurement.SystemMetrics, false)
 		}
 		raw.ExecutionResult.TerminationReason = terminationReason(found, errorCode)
 		raw.ExecutionResult.QualityClaims = QualityClaims{}
-		if s.Observation.Mode != "off" {
+		if s.Observation.Mode != "minimum" {
 			if algorithm == "bridge" {
 				raw.Observations.ObservationData = routeResult.Observation
 			} else {
@@ -781,10 +803,19 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			raw.Observations.QualityHistory = append([]ultrasound.QualityPoint(nil), m.QualityHistory...)
 			raw.Observations.BudgetHistory = append([]ultrasound.BudgetPoint(nil), m.BudgetHistory...)
 			raw.Observations.CollectorMetrics = &m
+			if effectiveObservationMode == "debug" {
+				raw.Observations.DebugSummary = buildDebugSummary(work, raw.ExecutionResult.BudgetLedger, m)
+				raw.Observations.DebugSummary.HandoffMetrics = raw.ExecutionResult.HandoffMetrics
+				raw.Observations.DebugSummary.BottleneckProfile = raw.ExecutionResult.BottleneckProfile
+			}
 		}
 		if distance != nil {
 			d := *distance
 			raw.ExecutionResult.PathCost = &d
+		}
+		if invariantErr := validateBenchmarkRunClaims(raw); invariantErr != nil {
+			stopProgress(false, completedRuns)
+			return out, fmt.Errorf("scenario %s query %s algorithm %s produced invalid claims: %w", c.ID, query.ID, algorithm, invariantErr)
 		}
 		raw.RunMetadata.StableDigest = rawRunStableDigest(raw)
 		if tracePath != "" && collector != nil {
@@ -796,40 +827,14 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			if absolute, absErr := filepath.Abs(raw.References.TraceManifestPath); absErr == nil {
 				raw.References.TraceManifestPath = absolute
 			}
-			if err := writeTraceManifest(traceBaseDir, raw, s.Observation.SampleRate, collector.Metrics(), tracePath); err != nil {
+			if err := writeTraceManifest(traceBaseDir, raw, collector.Metrics(), tracePath); err != nil {
 				stopProgress(false, completedRuns)
 				return out, err
 			}
 		}
-		if s.Output.OutputDir != "" && (s.Output.SaveRawResults || s.Output.SaveGraphSnapshot) {
-			runDir := filepath.Join(s.Output.OutputDir, c.ID, runDirName)
-			if s.Output.SaveGraphSnapshot {
-				graphPath := filepath.Join(runDir, "graph.json")
-				graphSnapshot := graphToInput(g)
-				if err := writeJSONFile(graphPath, graphSnapshot, opts.Overwrite); err != nil {
-					stopProgress(false, completedRuns)
-					return out, err
-				}
-				raw.References.GraphSnapshotPath = graphPath
-				if absolute, absErr := filepath.Abs(raw.References.GraphSnapshotPath); absErr == nil {
-					raw.References.GraphSnapshotPath = absolute
-				}
-				graphSHA, shaErr := fileSHA256(raw.References.GraphSnapshotPath)
-				if shaErr != nil {
-					stopProgress(false, completedRuns)
-					return out, shaErr
-				}
-				raw.References.GraphSnapshotSHA256 = graphSHA
-			}
-		}
+
 		out.Runs = append(out.Runs, raw)
-		if s.Output.OutputDir != "" && s.Output.SaveRawResults {
-			runDir := filepath.Join(s.Output.OutputDir, c.ID, runDirName)
-			if err := writeJSONFile(filepath.Join(runDir, "raw-result.json"), raw, opts.Overwrite); err != nil {
-				stopProgress(false, completedRuns)
-				return out, err
-			}
-		}
+
 		completedRuns++
 		stopProgress(true, completedRuns)
 		if plan.Warmup {
@@ -874,6 +879,7 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 			acc.failureReasons[raw.ExecutionResult.FailureReason]++
 		}
 	}
+	enrichHandoffBaselines(out.Runs)
 	for _, acc := range groups {
 		r := &acc.result
 		n := float64(r.Runs)
@@ -911,10 +917,8 @@ func RunScenarioWithOptions(ctx context.Context, s BenchmarkScenario, opts RunSc
 	completedAt := time.Now()
 	out.RunMetadata.CompletedAt = completedAt.UTC().Format(time.RFC3339Nano)
 	out.RunMetadata.DurationMS = float64(completedAt.Sub(started).Microseconds()) / 1000
-	if s.Output.OutputDir != "" {
-		if err := writeJSONFile(filepath.Join(s.Output.OutputDir, "result.json"), out, opts.Overwrite); err != nil {
-			return BenchmarkResult{}, err
-		}
+	if err := writeExecutionArtifacts(executionDirectory, s, out); err != nil {
+		return BenchmarkResult{}, err
 	}
 	return out, nil
 }
@@ -1053,7 +1057,7 @@ func rawRunStableDigest(raw BenchmarkRun) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func writeTraceManifest(dir string, raw BenchmarkRun, sampleRate float64, metrics ultrasound.CollectorMetrics, tracePath string) error {
+func writeTraceManifest(dir string, raw BenchmarkRun, metrics ultrasound.CollectorMetrics, tracePath string) error {
 	b, err := os.ReadFile(tracePath)
 	if err != nil {
 		return err
@@ -1064,8 +1068,10 @@ func writeTraceManifest(dir string, raw BenchmarkRun, sampleRate float64, metric
 		"run_id":               raw.RunMetadata.RunID,
 		"created_at":           time.Now().UTC().Format(time.RFC3339Nano),
 		"ultrasound_mode":      raw.ScenarioDefinition.ObservationMode,
-		"sample_rate":          sampleRate,
-		"sampling_algorithm":   "fnv1a-seed-ordinal-kind-v1",
+		"sample_rate":          1.0,
+		"trace_complete":       !metrics.Truncated && metrics.DroppedEvents == 0,
+		"first_sequence":       metrics.FirstSequence,
+		"last_sequence":        metrics.LastSequence,
 		"event_count":          metrics.EventCount,
 		"dropped_event_count":  metrics.DroppedEvents,
 		"truncated":            metrics.Truncated,
@@ -1214,4 +1220,248 @@ func maxUint64(a, b uint64) uint64 {
 		return a
 	}
 	return b
+}
+
+// validateBenchmarkRunClaims rejects internally contradictory benchmark data.
+// Invalid proof or timing claims must fail the run rather than silently enter
+// aggregate research output.
+func validateBenchmarkRunClaims(run BenchmarkRun) error {
+	result := run.ExecutionResult
+	measurement := run.Measurement
+	if result.OptimalityProven && !result.PathFound {
+		return fmt.Errorf("optimality_proven requires path_found")
+	}
+	if result.OptimalityProven && !result.SearchCompleted {
+		return fmt.Errorf("optimality_proven requires search_completed")
+	}
+	if result.PathFound && !result.ReachabilityProven {
+		return fmt.Errorf("path_found requires reachability_proven")
+	}
+	if result.ErrorCode == core.ErrNoPath && (!result.SearchCompleted || !result.ReachabilityProven || result.PathFound) {
+		return fmt.Errorf("NO_PATH requires completed unreachable proof")
+	}
+	if result.ErrorCode == core.ErrBudgetExhausted && (result.SearchCompleted || result.ReachabilityProven || result.OptimalityProven) {
+		return fmt.Errorf("budget exhaustion cannot produce completion or proof claims")
+	}
+	if measurement.TimingValid && (measurement.EndToEndTimeNS <= 0 || measurement.SolverTimeNS <= 0) {
+		return fmt.Errorf("timing_valid requires positive end-to-end and solver durations")
+	}
+	return nil
+}
+
+func validateSafeID(field, value string) error {
+	if value == "" {
+		return fmt.Errorf("%s is required", field)
+	}
+	for _, r := range value {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_') {
+			return fmt.Errorf("%s contains unsafe character %q", field, r)
+		}
+	}
+	return nil
+}
+
+func newExecutionID() (string, error) {
+	var random [10]byte
+	if _, err := rand.Read(random[:]); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%013d-%s", time.Now().UTC().UnixMilli(), hex.EncodeToString(random[:])), nil
+}
+
+func durationMillisecondsPointer(value string) *float64 {
+	if value == "" {
+		return nil
+	}
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		return nil
+	}
+	ms := float64(d) / float64(time.Millisecond)
+	return &ms
+}
+
+func writeExecutionArtifacts(directory string, scenario BenchmarkScenario, result BenchmarkResult) error {
+	if err := writeJSONFile(filepath.Join(directory, "result.json"), result, false); err != nil {
+		return err
+	}
+	if err := writeJSONFile(filepath.Join(directory, "scenario.json"), scenario, false); err != nil {
+		return err
+	}
+	if err := writeJSONFile(filepath.Join(directory, "environment.json"), result.Environment, false); err != nil {
+		return err
+	}
+	manifest := map[string]any{
+		"schema_version":          "bridge.benchmark.execution.v1",
+		"execution_id":            result.ExecutionID,
+		"suite_id":                result.SuiteID,
+		"scenario_schema_version": scenario.SchemaVersion,
+		"observation_mode":        scenario.Observation.Mode,
+		"started_at":              result.RunMetadata.StartedAt,
+		"completed_at":            result.RunMetadata.CompletedAt,
+		"output_directory":        result.OutputDirectory,
+		"run_order":               result.Execution.RunOrder,
+	}
+	if err := writeJSONFile(filepath.Join(directory, "manifest.json"), manifest, false); err != nil {
+		return err
+	}
+	if err := writeJSONLines(filepath.Join(directory, "runs.jsonl"), result.Runs); err != nil {
+		return err
+	}
+	if err := writeSummaryCSV(filepath.Join(directory, "summary.csv"), result); err != nil {
+		return err
+	}
+	return writeHandoffCSV(filepath.Join(directory, "handoffs.csv"), result.Runs)
+}
+
+func writeJSONLines(path string, values []BenchmarkRun) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	enc := json.NewEncoder(f)
+	for _, value := range values {
+		if err := enc.Encode(value); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func writeSummaryCSV(path string, result BenchmarkResult) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := fmt.Fprintln(f, "suite_id,scenario_id,algorithm,query_id,runs,path_found_rate,optimality_proven_rate,mean_path_cost,mean_work_actions,mean_solver_time_ms,mean_end_to_end_time_ms"); err != nil {
+		return err
+	}
+	for _, row := range result.ScenarioSummaries {
+		if _, err := fmt.Fprintf(f, "%s,%s,%s,%s,%d,%.9g,%.9g,%.17g,%.17g,%.17g,%.17g\n", result.SuiteID, row.ScenarioID, row.Algorithm, row.QueryID, row.Runs, row.FoundRate, row.ExactRate, row.AverageDistance, row.AverageWork, row.AverageSolverTimeMS, row.AverageEndToEndMS); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func buildDebugSummary(work core.WorkMetrics, ledger *core.BudgetLedger, metrics ultrasound.CollectorMetrics) *DebugSummary {
+	out := &DebugSummary{
+		ActionCounts: map[string]uint64{
+			"select": work.SelectActions, "expand": work.ExpandActions, "evaluate": work.EvaluateActions,
+			"relax": work.RelaxActions, "enqueue": work.EnqueueActions, "reject": work.RejectActions,
+			"backtrack": work.BacktrackActions, "connect": work.ConnectActions, "candidate": work.CandidateActions,
+			"repair": work.RepairActions, "bound": work.BoundActions, "terminate": work.TerminateActions,
+			"hypothesis": work.HypothesisActions, "evidence": work.EvidenceActions, "handoff": work.HandoffActions,
+			"schedule": work.ScheduleActions,
+		},
+		WorkByComponent: map[string]uint64{}, BudgetGrantedByPurpose: map[string]uint64{}, BudgetUsedByPurpose: map[string]uint64{},
+		CandidateUpdateCount: maxUint64(metrics.DebugSummary.CandidateUpdateCount, work.CandidateActions), FallbackCount: metrics.DebugSummary.FallbackCount,
+		CertificationCount: metrics.DebugSummary.CertificationCount, StateReuseAppliedCount: metrics.DebugSummary.StateReuseAppliedCount,
+		MaxFrontierSize: metrics.DebugSummary.MaxFrontierSize, ComponentEventCounts: metrics.DebugSummary.ComponentEventCounts,
+		ObservationOverheadNS: metrics.ObservationNS, TraceSinkWriteNS: metrics.SinkWriteNS,
+		DroppedEvents: metrics.DroppedEvents, Truncated: metrics.Truncated,
+	}
+	if ledger != nil {
+		for k, v := range ledger.ByComponent {
+			out.WorkByComponent[string(k)] = v
+		}
+		for _, e := range ledger.Entries {
+			if e.Granted != nil {
+				out.BudgetGrantedByPurpose[e.Purpose] += *e.Granted
+			}
+			out.BudgetUsedByPurpose[e.Purpose] += e.Used
+			id := strings.ToLower(e.TaskID)
+			if strings.Contains(id, "certif") {
+				out.CertificationCount++
+			}
+			if strings.Contains(id, "fallback") || strings.Contains(id, "emergency") {
+				out.FallbackCount++
+			}
+		}
+	}
+	return out
+}
+
+func enrichHandoffBaselines(runs []BenchmarkRun) {
+	type key struct {
+		scenario, graph, query string
+		seed                   int64
+		rep                    int
+	}
+	baseline := map[key]BenchmarkRun{}
+	for _, run := range runs {
+		if run.RunMetadata.WarmupRun || run.RunMetadata.AlgorithmID != "weighted_astar" {
+			continue
+		}
+		baseline[key{run.RunMetadata.ScenarioID, run.RunMetadata.GraphInstanceID, run.RunMetadata.QueryID, run.RunMetadata.ExecutionSeed, run.RunMetadata.RepetitionIndex}] = run
+	}
+	for i := range runs {
+		h := runs[i].ExecutionResult.HandoffMetrics
+		if h == nil {
+			continue
+		}
+		b, ok := baseline[key{runs[i].RunMetadata.ScenarioID, runs[i].RunMetadata.GraphInstanceID, runs[i].RunMetadata.QueryID, runs[i].RunMetadata.ExecutionSeed, runs[i].RunMetadata.RepetitionIndex}]
+		if !ok {
+			continue
+		}
+		for j := range h.Records {
+			bw := b.Measurement.Work.TotalActions
+			bt := b.Measurement.SolverTimeNS
+			h.Records[j].BoltsStandaloneWork = &bw
+			dw := int64(h.Records[j].AnchorWorkAtHandoff+h.Records[j].BoltsWork) - int64(bw)
+			h.Records[j].AdditionalWorkVsBoltsStandalone = &dw
+			h.Records[j].BoltsStandaloneTimeNS = &bt
+			dt := h.Records[j].BoltsTimeNS - bt
+			h.Records[j].AdditionalTimeNSVsBoltsStandalone = &dt
+		}
+	}
+}
+
+func writeHandoffCSV(path string, runs []BenchmarkRun) error {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err = fmt.Fprintln(f, "scenario_id,algorithm,run_id,handoff_sequence,reason,anchor_work_at_handoff,bolts_work,bolts_time_ms,available_state_units,transferred_state_units,reused_state_units,pre_handoff_waste_work,bolts_standalone_work,additional_work_vs_bolts_standalone,bolts_standalone_time_ms,additional_time_ms_vs_bolts_standalone,dominant_work_component,dominant_time_component"); err != nil {
+		return err
+	}
+	for _, run := range runs {
+		h := run.ExecutionResult.HandoffMetrics
+		if h == nil {
+			continue
+		}
+		for _, r := range h.Records {
+			bw, dw, bt, dt := "", "", "", ""
+			if r.BoltsStandaloneWork != nil {
+				bw = fmt.Sprint(*r.BoltsStandaloneWork)
+			}
+			if r.AdditionalWorkVsBoltsStandalone != nil {
+				dw = fmt.Sprint(*r.AdditionalWorkVsBoltsStandalone)
+			}
+			if r.BoltsStandaloneTimeNS != nil {
+				bt = fmt.Sprintf("%.6f", float64(*r.BoltsStandaloneTimeNS)/1e6)
+			}
+			if r.AdditionalTimeNSVsBoltsStandalone != nil {
+				dt = fmt.Sprintf("%.6f", float64(*r.AdditionalTimeNSVsBoltsStandalone)/1e6)
+			}
+			dwcomp, dtcomp := "", ""
+			if run.ExecutionResult.BottleneckProfile != nil {
+				dwcomp = run.ExecutionResult.BottleneckProfile.DominantWorkComponent
+				dtcomp = run.ExecutionResult.BottleneckProfile.DominantTimeComponent
+			}
+			if _, err = fmt.Fprintf(f, "%s,%s,%s,%d,%s,%d,%d,%.6f,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s\n", run.RunMetadata.ScenarioID, run.RunMetadata.AlgorithmID, run.RunMetadata.RunID, r.Sequence, r.Reason, r.AnchorWorkAtHandoff, r.BoltsWork, float64(r.BoltsTimeNS)/1e6, r.AvailableStateUnits, r.TransferredStateUnits, r.ReusedStateUnits, r.PreHandoffWasteWork, bw, dw, bt, dt, dwcomp, dtcomp); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

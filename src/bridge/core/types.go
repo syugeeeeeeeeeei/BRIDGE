@@ -110,18 +110,20 @@ type AblationOptions struct {
 }
 
 type RouteRequest struct {
-	Source           NodeID          `json:"source"`
-	Target           NodeID          `json:"target"`
-	Mode             RouteMode       `json:"route_mode"`
-	MaxSuboptimality *float64        `json:"max_suboptimality,omitempty"`
-	Deadline         time.Duration   `json:"-"`
-	DeadlineMS       *float64        `json:"deadline_ms,omitempty"`
-	WorkBudget       *uint64         `json:"work_budget,omitempty"`
-	MemoryBudgetKiB  *float64        `json:"memory_budget_kib,omitempty"`
-	Workers          int             `json:"logical_worker_count"`
-	Seed             uint64          `json:"seed"`
-	AnchorStrategy   string          `json:"-"`
-	Ablation         AblationOptions `json:"ablation,omitempty"`
+	Source                 NodeID          `json:"source"`
+	Target                 NodeID          `json:"target"`
+	Mode                   RouteMode       `json:"route_mode"`
+	MaxSuboptimality       *float64        `json:"max_suboptimality,omitempty"`
+	Deadline               time.Duration   `json:"-"`
+	DeadlineMS             *float64        `json:"deadline_ms,omitempty"`
+	WorkBudget             *uint64         `json:"work_budget,omitempty"`
+	MemoryBudgetKiB        *float64        `json:"memory_budget_kib,omitempty"`
+	Workers                int             `json:"logical_worker_count"`
+	Seed                   uint64          `json:"seed"`
+	AnchorStrategy         string          `json:"-"`
+	Ablation               AblationOptions `json:"ablation,omitempty"`
+	CollectProgressSamples bool            `json:"-"`
+	HandoffWorkThreshold   *uint64         `json:"-"`
 }
 
 func (r RouteRequest) Validate(g Graph) error {
@@ -161,23 +163,27 @@ const (
 type WorkAction string
 
 const (
-	WorkSelect    WorkAction = "select"
-	WorkExpand    WorkAction = "expand"
-	WorkEvaluate  WorkAction = "evaluate"
-	WorkRelax     WorkAction = "relax"
-	WorkEnqueue   WorkAction = "enqueue"
-	WorkReject    WorkAction = "reject"
-	WorkBacktrack WorkAction = "backtrack"
-	WorkConnect   WorkAction = "connect"
-	WorkCandidate WorkAction = "candidate"
-	WorkRepair    WorkAction = "repair"
-	WorkBound     WorkAction = "bound"
-	WorkTerminate WorkAction = "terminate"
+	WorkSelect           WorkAction = "select"
+	WorkExpand           WorkAction = "expand"
+	WorkEvaluate         WorkAction = "evaluate"
+	WorkRelax            WorkAction = "relax"
+	WorkEnqueue          WorkAction = "enqueue"
+	WorkReject           WorkAction = "reject"
+	WorkBacktrack        WorkAction = "backtrack"
+	WorkConnect          WorkAction = "connect"
+	WorkCandidate        WorkAction = "candidate"
+	WorkRepair           WorkAction = "repair"
+	WorkBound            WorkAction = "bound"
+	WorkTerminate        WorkAction = "terminate"
+	WorkHypothesisAction WorkAction = "hypothesis"
+	WorkEvidenceAction   WorkAction = "evidence"
+	WorkHandoffAction    WorkAction = "handoff"
+	WorkScheduleAction   WorkAction = "schedule"
 )
 
 func IsWorkAction(kind string) bool {
 	switch WorkAction(kind) {
-	case WorkSelect, WorkExpand, WorkEvaluate, WorkRelax, WorkEnqueue, WorkReject, WorkBacktrack, WorkConnect, WorkCandidate, WorkRepair, WorkBound, WorkTerminate:
+	case WorkSelect, WorkExpand, WorkEvaluate, WorkRelax, WorkEnqueue, WorkReject, WorkBacktrack, WorkConnect, WorkCandidate, WorkRepair, WorkBound, WorkTerminate, WorkHypothesisAction, WorkEvidenceAction, WorkHandoffAction, WorkScheduleAction:
 		return true
 	default:
 		return false
@@ -185,22 +191,26 @@ func IsWorkAction(kind string) bool {
 }
 
 type WorkMetrics struct {
-	TotalActions     uint64 `json:"total_actions"`
-	SelectActions    uint64 `json:"select_actions"`
-	ExpandActions    uint64 `json:"expand_actions"`
-	EvaluateActions  uint64 `json:"evaluate_actions"`
-	RelaxActions     uint64 `json:"relax_actions"`
-	EnqueueActions   uint64 `json:"enqueue_actions"`
-	RejectActions    uint64 `json:"reject_actions"`
-	BacktrackActions uint64 `json:"backtrack_actions"`
-	ConnectActions   uint64 `json:"connect_actions"`
-	CandidateActions uint64 `json:"candidate_actions"`
-	RepairActions    uint64 `json:"repair_actions"`
-	BoundActions     uint64 `json:"bound_actions"`
-	TerminateActions uint64 `json:"terminate_actions"`
-	LogicalSteps     uint64 `json:"logical_steps"`
-	ScheduledSteps   uint64 `json:"scheduled_steps"`
-	WorkerCount      uint32 `json:"logical_worker_count"`
+	TotalActions      uint64 `json:"total_actions"`
+	SelectActions     uint64 `json:"select_actions"`
+	ExpandActions     uint64 `json:"expand_actions"`
+	EvaluateActions   uint64 `json:"evaluate_actions"`
+	RelaxActions      uint64 `json:"relax_actions"`
+	EnqueueActions    uint64 `json:"enqueue_actions"`
+	RejectActions     uint64 `json:"reject_actions"`
+	BacktrackActions  uint64 `json:"backtrack_actions"`
+	ConnectActions    uint64 `json:"connect_actions"`
+	CandidateActions  uint64 `json:"candidate_actions"`
+	RepairActions     uint64 `json:"repair_actions"`
+	BoundActions      uint64 `json:"bound_actions"`
+	TerminateActions  uint64 `json:"terminate_actions"`
+	HypothesisActions uint64 `json:"hypothesis_actions"`
+	EvidenceActions   uint64 `json:"evidence_actions"`
+	HandoffActions    uint64 `json:"handoff_actions"`
+	ScheduleActions   uint64 `json:"schedule_actions"`
+	LogicalSteps      uint64 `json:"logical_steps"`
+	ScheduledSteps    uint64 `json:"scheduled_steps"`
+	WorkerCount       uint32 `json:"logical_worker_count"`
 }
 
 func (w *WorkMetrics) AddAction(kind string) {
@@ -233,6 +243,14 @@ func (w *WorkMetrics) AddAction(kind string) {
 		w.BoundActions++
 	case "terminate":
 		w.TerminateActions++
+	case "hypothesis":
+		w.HypothesisActions++
+	case "evidence":
+		w.EvidenceActions++
+	case "handoff":
+		w.HandoffActions++
+	case "schedule":
+		w.ScheduleActions++
 	}
 }
 
@@ -250,6 +268,10 @@ func (w *WorkMetrics) Add(other WorkMetrics) {
 	w.RepairActions += other.RepairActions
 	w.BoundActions += other.BoundActions
 	w.TerminateActions += other.TerminateActions
+	w.HypothesisActions += other.HypothesisActions
+	w.EvidenceActions += other.EvidenceActions
+	w.HandoffActions += other.HandoffActions
+	w.ScheduleActions += other.ScheduleActions
 	w.LogicalSteps += other.LogicalSteps
 	w.ScheduledSteps += other.ScheduledSteps
 	if other.WorkerCount > w.WorkerCount {
@@ -258,7 +280,7 @@ func (w *WorkMetrics) Add(other WorkMetrics) {
 }
 
 func (w WorkMetrics) CountedActions() uint64 {
-	return w.SelectActions + w.ExpandActions + w.EvaluateActions + w.RelaxActions + w.EnqueueActions + w.RejectActions + w.BacktrackActions + w.ConnectActions + w.CandidateActions + w.RepairActions + w.BoundActions + w.TerminateActions
+	return w.SelectActions + w.ExpandActions + w.EvaluateActions + w.RelaxActions + w.EnqueueActions + w.RejectActions + w.BacktrackActions + w.ConnectActions + w.CandidateActions + w.RepairActions + w.BoundActions + w.TerminateActions + w.HypothesisActions + w.EvidenceActions + w.HandoffActions + w.ScheduleActions
 }
 
 func (w WorkMetrics) ValidationErrors() []string {
@@ -276,11 +298,22 @@ func (w WorkMetrics) ValidationErrors() []string {
 }
 
 func (w WorkMetrics) Valid() bool {
-	return w.TotalActions == w.SelectActions+w.ExpandActions+w.EvaluateActions+w.RelaxActions+w.EnqueueActions+w.RejectActions+w.BacktrackActions+w.ConnectActions+w.CandidateActions+w.RepairActions+w.BoundActions+w.TerminateActions && w.LogicalSteps <= w.ScheduledSteps && w.ScheduledSteps <= w.TotalActions
+	return w.TotalActions == w.CountedActions() && w.LogicalSteps <= w.ScheduledSteps && w.ScheduledSteps <= w.TotalActions
 }
 
 // TimeBreakdown records measured execution phases. These durations are not Work.
 type TimeBreakdown struct {
+	// Nanosecond fields are primary measurements. Millisecond fields are derived compatibility views.
+	TotalNS         int64   `json:"total_ns"`
+	SolverNS        int64   `json:"solver_ns"`
+	TrussNS         int64   `json:"truss_ns,omitempty"`
+	GateNS          int64   `json:"gate_ns,omitempty"`
+	AnchorNS        int64   `json:"anchor_ns,omitempty"`
+	BoltsNS         int64   `json:"bolts_ns,omitempty"`
+	FallbackNS      int64   `json:"fallback_ns,omitempty"`
+	SupervisorNS    int64   `json:"supervisor_ns,omitempty"`
+	ArbiterNS       int64   `json:"arbiter_ns,omitempty"`
+	OrchestrationNS int64   `json:"orchestration_ns,omitempty"`
 	TotalMS         float64 `json:"total_ms"`
 	SolverMS        float64 `json:"solver_ms"`
 	TrussMS         float64 `json:"truss_ms,omitempty"`
@@ -323,37 +356,100 @@ type BudgetLedger struct {
 	Entries     []BudgetLedgerEntry  `json:"entries"`
 }
 
+// HandoffRecord captures one ANCHOR-to-BOLTS transfer and its measurable cost.
+type HandoffRecord struct {
+	Sequence                          uint64  `json:"sequence"`
+	Reason                            string  `json:"reason"`
+	AnchorWorkAtHandoff               uint64  `json:"anchor_work_at_handoff"`
+	BoltsWork                         uint64  `json:"bolts_work"`
+	BoltsTimeNS                       int64   `json:"bolts_time_ns"`
+	AvailableStateUnits               uint64  `json:"available_state_units"`
+	TransferredStateUnits             uint64  `json:"transferred_state_units"`
+	QueuedSeedStateUnits              uint64  `json:"queued_seed_state_units"`
+	ExpandedSeedStateUnits            uint64  `json:"expanded_seed_state_units"`
+	PathContributingSeedStateUnits    uint64  `json:"path_contributing_seed_state_units"`
+	ReusedStateUnits                  uint64  `json:"reused_state_units"`
+	PreHandoffWasteWork               uint64  `json:"pre_handoff_waste_work"`
+	BoltsStandaloneWork               *uint64 `json:"bolts_standalone_work,omitempty"`
+	AdditionalWorkVsBoltsStandalone   *int64  `json:"additional_work_vs_bolts_standalone,omitempty"`
+	BoltsStandaloneTimeNS             *int64  `json:"bolts_standalone_time_ns,omitempty"`
+	AdditionalTimeNSVsBoltsStandalone *int64  `json:"additional_time_ns_vs_bolts_standalone,omitempty"`
+}
+
+type HandoffMetrics struct {
+	Count                               uint64          `json:"count"`
+	Records                             []HandoffRecord `json:"records,omitempty"`
+	TotalBoltsWork                      uint64          `json:"total_bolts_work"`
+	TotalBoltsTimeNS                    int64           `json:"total_bolts_time_ns"`
+	TotalAvailableStateUnits            uint64          `json:"total_available_state_units"`
+	TotalTransferredStateUnits          uint64          `json:"total_transferred_state_units"`
+	TotalQueuedSeedStateUnits           uint64          `json:"total_queued_seed_state_units"`
+	TotalExpandedSeedStateUnits         uint64          `json:"total_expanded_seed_state_units"`
+	TotalPathContributingSeedStateUnits uint64          `json:"total_path_contributing_seed_state_units"`
+	TotalReusedStateUnits               uint64          `json:"total_reused_state_units"`
+	TotalPreHandoffWasteWork            uint64          `json:"total_pre_handoff_waste_work"`
+}
+
+type ProgressSample struct {
+	Work                      uint64  `json:"work"`
+	CandidateFound            bool    `json:"candidate_found"`
+	WorksSinceCandidateUpdate uint64  `json:"works_since_candidate_update"`
+	FrontierSize              uint64  `json:"frontier_size"`
+	RejectRate                float64 `json:"reject_rate"`
+	BestHeuristic             float64 `json:"best_heuristic"`
+	LowerBound                float64 `json:"lower_bound"`
+}
+
+type BottleneckProfile struct {
+	AnchorWork                uint64           `json:"anchor_work"`
+	BoltsWork                 uint64           `json:"bolts_work"`
+	TrussWork                 uint64           `json:"truss_work"`
+	AnchorTimeNS              int64            `json:"anchor_time_ns"`
+	BoltsTimeNS               int64            `json:"bolts_time_ns"`
+	OrchestrationTimeNS       int64            `json:"orchestration_time_ns"`
+	EpochCount                uint64           `json:"epoch_count"`
+	MaxFrontierSize           uint64           `json:"max_frontier_size"`
+	CandidateUpdateCount      uint64           `json:"candidate_update_count"`
+	WorksSinceCandidateUpdate uint64           `json:"works_since_candidate_update"`
+	DominantWorkComponent     string           `json:"dominant_work_component"`
+	DominantTimeComponent     string           `json:"dominant_time_component"`
+	ProgressSamples           []ProgressSample `json:"progress_samples,omitempty"`
+}
+
 type RouteResult struct {
-	Path               []NodeID       `json:"path"`
-	Distance           float64        `json:"path_cost"`
-	Found              bool           `json:"path_found"`
-	SearchCompleted    bool           `json:"search_completed"`
-	ReachabilityProven bool           `json:"reachability_proven"`
-	Exact              bool           `json:"optimality_proven"`
-	SolverName         string         `json:"solver_name"`
-	Work               WorkMetrics    `json:"work"`
-	WorkRelaxations    uint64         `json:"work_relaxations"`
-	WorkExpandedNodes  uint64         `json:"work_expanded_nodes"`
-	QueuePushes        uint64         `json:"queue_pushes"`
-	QueuePops          uint64         `json:"queue_pops"`
-	ParallelSteps      uint64         `json:"parallel_steps"`
-	TimeMS             float64        `json:"end_to_end_time_ms"`
-	TimeBreakdown      TimeBreakdown  `json:"time_breakdown"`
-	LowerBound         float64        `json:"lower_bound"`
-	CertifiedRatio     *float64       `json:"proven_cost_ratio,omitempty"`
-	QualityCertified   bool           `json:"quality_bound_proven"`
-	FirstPathWork      *uint64        `json:"first_path_work,omitempty"`
-	FallbackUsed       bool           `json:"fallback_used"`
-	BudgetExhausted    bool           `json:"budget_exhausted"`
-	DeadlineExceeded   bool           `json:"deadline_exceeded"`
-	ErrorCode          ErrorCode      `json:"error_code,omitempty"`
-	SolverTrace        []TaskTrace    `json:"solver_trace,omitempty"`
-	Telemetry          map[string]any `json:"telemetry,omitempty"`
-	FailureReason      string         `json:"failure_reason,omitempty"`
-	TimeToFirstPathMS  *float64       `json:"first_path_elapsed_ms,omitempty"`
-	TimeToBestFoundMS  *float64       `json:"best_path_elapsed_ms,omitempty"`
-	ImprovementCount   uint64         `json:"improvement_count"`
-	BudgetLedger       *BudgetLedger  `json:"budget_ledger,omitempty"`
+	TerminationStatus  TerminationStatus  `json:"termination_status"`
+	Path               []NodeID           `json:"path"`
+	Distance           float64            `json:"path_cost"`
+	Found              bool               `json:"path_found"`
+	SearchCompleted    bool               `json:"search_completed"`
+	ReachabilityProven bool               `json:"reachability_proven"`
+	Exact              bool               `json:"optimality_proven"`
+	SolverName         string             `json:"solver_name"`
+	Work               WorkMetrics        `json:"work"`
+	WorkRelaxations    uint64             `json:"work_relaxations"`
+	WorkExpandedNodes  uint64             `json:"work_expanded_nodes"`
+	QueuePushes        uint64             `json:"queue_pushes"`
+	QueuePops          uint64             `json:"queue_pops"`
+	ParallelSteps      uint64             `json:"parallel_steps"`
+	TimeMS             float64            `json:"end_to_end_time_ms"`
+	TimeBreakdown      TimeBreakdown      `json:"time_breakdown"`
+	LowerBound         float64            `json:"lower_bound"`
+	CertifiedRatio     *float64           `json:"proven_cost_ratio,omitempty"`
+	QualityCertified   bool               `json:"quality_bound_proven"`
+	FirstPathWork      *uint64            `json:"first_path_work,omitempty"`
+	FallbackUsed       bool               `json:"fallback_used"`
+	BudgetExhausted    bool               `json:"budget_exhausted"`
+	DeadlineExceeded   bool               `json:"deadline_exceeded"`
+	ErrorCode          ErrorCode          `json:"error_code,omitempty"`
+	SolverTrace        []TaskTrace        `json:"solver_trace,omitempty"`
+	Telemetry          map[string]any     `json:"telemetry,omitempty"`
+	FailureReason      string             `json:"failure_reason,omitempty"`
+	TimeToFirstPathMS  *float64           `json:"first_path_elapsed_ms,omitempty"`
+	TimeToBestFoundMS  *float64           `json:"best_path_elapsed_ms,omitempty"`
+	ImprovementCount   uint64             `json:"improvement_count"`
+	BudgetLedger       *BudgetLedger      `json:"budget_ledger,omitempty"`
+	HandoffMetrics     *HandoffMetrics    `json:"handoff_metrics,omitempty"`
+	BottleneckProfile  *BottleneckProfile `json:"bottleneck_profile,omitempty"`
 }
 
 func (r RouteResult) TotalWork() uint64 { return r.Work.TotalActions }

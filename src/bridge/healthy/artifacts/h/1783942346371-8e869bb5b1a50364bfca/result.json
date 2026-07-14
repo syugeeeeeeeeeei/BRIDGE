@@ -1,0 +1,818 @@
+{
+  "schema_version": "bridge.benchmark.artifact.v3",
+  "terminology_version": "bridge.terminology.v1",
+  "suite_id": "h",
+  "execution_id": "1783942346371-8e869bb5b1a50364bfca",
+  "output_directory": "artifacts/h/1783942346371-8e869bb5b1a50364bfca",
+  "run_metadata": {
+    "scenario_schema_version": "bridge.benchmark.v3",
+    "started_at": "2026-07-13T11:32:26.371561173Z",
+    "completed_at": "2026-07-13T11:32:26.374007029Z",
+    "duration_ms": 2.445,
+    "execution_succeeded": true,
+    "observation_mode": "minimum"
+  },
+  "execution": {
+    "randomized": false,
+    "run_order": [
+      "g/dijkstra/g/seed-1/q/rep-1",
+      "g/anchor/g/seed-1/q/rep-1"
+    ]
+  },
+  "environment": {
+    "go_version": "go1.23.2",
+    "goos": "linux",
+    "goarch": "amd64",
+    "cpus": 56,
+    "captured_at": "2026-07-13T11:32:26.371565127Z"
+  },
+  "runs": [
+    {
+      "run_metadata": {
+        "run_ordinal": 1,
+        "run_id": "g/dijkstra/g/seed-1/q/rep-1",
+        "run_name": "g/dijkstra/g/seed-1/q/rep-1",
+        "scenario_id": "g",
+        "graph_instance_id": "g/seed-1",
+        "query_id": "q",
+        "algorithm_id": "dijkstra",
+        "execution_seed": 1,
+        "repetition_index": 1,
+        "warmup_run": false,
+        "execution_started_at": "2026-07-13T11:32:26.371746999Z",
+        "execution_succeeded": true,
+        "stable_digest": "6e09a16b0fa078e8da65e5554a4a37357fe426943db2bc2cdf78dd4c381f78e9"
+      },
+      "scenario_definition": {
+        "scenario_id": "g",
+        "graph_generator": "grid",
+        "graph_generator_settings": {
+          "generator": "grid",
+          "requested_node_count": 9,
+          "topology": "open"
+        },
+        "route_configuration": {
+          "mode": "balanced",
+          "logical_worker_count": 1
+        },
+        "budget_configuration": {},
+        "ablation_configuration": {},
+        "query_selection_method": "generator_default",
+        "observation_mode": "minimum"
+      },
+      "graph_profile": {
+        "graph_instance_id": "g/seed-1",
+        "graph_generator": "grid",
+        "graph_topology": "open",
+        "graph_seed": 1,
+        "actual_node_count": 9,
+        "edge_count": 12,
+        "directed": false,
+        "average_out_degree": 1.3333333333333333,
+        "edge_density": 0.3333333333333333
+      },
+      "query_profile": {
+        "query_id": "q",
+        "query_seed": 1,
+        "query_hash": "22efbb92ff106dbcfb66999b6c3675e4a1b47f7f39331bb9b4d10ce6d10d0d53",
+        "query_selection_method": "generator_default",
+        "source": 0,
+        "target": 8
+      },
+      "algorithm_configuration": {
+        "algorithm_id": "dijkstra",
+        "execution_path": "execute_once",
+        "target_kind": "bolts_solver",
+        "route_configuration": {
+          "mode": "balanced",
+          "logical_worker_count": 1
+        },
+        "budget_configuration": {},
+        "ablation_configuration": {}
+      },
+      "execution_result": {
+        "returned_path": [
+          0,
+          3,
+          6,
+          7,
+          8
+        ],
+        "path_found": true,
+        "search_completed": true,
+        "reachability_proven": true,
+        "optimality_proven": true,
+        "path_cost": 4.071663072768391,
+        "termination_reason": "path_returned",
+        "improvement_count": 0,
+        "quality_claims": {
+          "quality_bound_proven": false
+        }
+      },
+      "measurement": {
+        "work": {
+          "total_actions": 88,
+          "select_actions": 10,
+          "expand_actions": 9,
+          "evaluate_actions": 22,
+          "relax_actions": 22,
+          "enqueue_actions": 10,
+          "reject_actions": 14,
+          "backtrack_actions": 0,
+          "connect_actions": 0,
+          "candidate_actions": 0,
+          "repair_actions": 0,
+          "bound_actions": 0,
+          "terminate_actions": 1,
+          "hypothesis_actions": 0,
+          "evidence_actions": 0,
+          "handoff_actions": 0,
+          "schedule_actions": 0,
+          "logical_steps": 88,
+          "scheduled_steps": 88,
+          "logical_worker_count": 1
+        },
+        "time_breakdown": {
+          "total_ns": 468351,
+          "solver_ns": 51401,
+          "truss_ns": 468351,
+          "gate_ns": 527679,
+          "total_ms": 0.468351,
+          "solver_ms": 0.051401,
+          "truss_ms": 0.468351,
+          "bolts_ms": 0.051401,
+          "gate_ms": 0.527679
+        },
+        "system_metrics": {
+          "alloc_bytes": 10840,
+          "malloc_count": 146,
+          "gc_count": 0,
+          "heap_alloc_before": 632984,
+          "heap_alloc_after": 643824,
+          "heap_alloc_boundary_max": 643824
+        },
+        "solver_time_ns": 51401,
+        "end_to_end_time_ns": 644366,
+        "solver_time_ms": 0.051401,
+        "end_to_end_time_ms": 0.644366,
+        "zero_duration": false,
+        "timing_valid": true
+      },
+      "observations": {
+        "collector_metrics": {
+          "event_count": 0,
+          "dropped_events": 0,
+          "truncated": false,
+          "observation_ns": 2305,
+          "sink_write_ns": 0,
+          "summary": {
+            "event_count": 0,
+            "first_sequence": 0,
+            "last_sequence": 0,
+            "kind_counts": {},
+            "phase_counts": {},
+            "max_logical_step": 0
+          },
+          "debug_summary": {
+            "candidate_update_count": 0,
+            "fallback_count": 0,
+            "certification_count": 0,
+            "state_reuse_applied_count": 0,
+            "max_frontier_size": 0
+          }
+        }
+      },
+      "references": {
+        "graph_specification": {
+          "generator": "grid",
+          "requested_node_count": 9,
+          "topology": "open"
+        }
+      }
+    },
+    {
+      "run_metadata": {
+        "run_ordinal": 2,
+        "run_id": "g/anchor/g/seed-1/q/rep-1",
+        "run_name": "g/anchor/g/seed-1/q/rep-1",
+        "scenario_id": "g",
+        "graph_instance_id": "g/seed-1",
+        "query_id": "q",
+        "algorithm_id": "anchor",
+        "execution_seed": 1,
+        "repetition_index": 1,
+        "warmup_run": false,
+        "execution_started_at": "2026-07-13T11:32:26.373671647Z",
+        "execution_succeeded": true,
+        "stable_digest": "6be3c38f5c1b3ebb65ca3ad003acd8a4ce9f2a6189636a7ee4caa07bc400ffa1"
+      },
+      "scenario_definition": {
+        "scenario_id": "g",
+        "graph_generator": "grid",
+        "graph_generator_settings": {
+          "generator": "grid",
+          "requested_node_count": 9,
+          "topology": "open"
+        },
+        "route_configuration": {
+          "mode": "balanced",
+          "logical_worker_count": 1
+        },
+        "budget_configuration": {},
+        "ablation_configuration": {},
+        "query_selection_method": "generator_default",
+        "observation_mode": "minimum"
+      },
+      "graph_profile": {
+        "graph_instance_id": "g/seed-1",
+        "graph_generator": "grid",
+        "graph_topology": "open",
+        "graph_seed": 1,
+        "actual_node_count": 9,
+        "edge_count": 12,
+        "directed": false,
+        "average_out_degree": 1.3333333333333333,
+        "edge_density": 0.3333333333333333
+      },
+      "query_profile": {
+        "query_id": "q",
+        "query_seed": 1,
+        "query_hash": "22efbb92ff106dbcfb66999b6c3675e4a1b47f7f39331bb9b4d10ce6d10d0d53",
+        "query_selection_method": "generator_default",
+        "source": 0,
+        "target": 8
+      },
+      "algorithm_configuration": {
+        "algorithm_id": "anchor",
+        "execution_path": "execute_once",
+        "target_kind": "algorithm",
+        "route_configuration": {
+          "mode": "balanced",
+          "logical_worker_count": 1
+        },
+        "budget_configuration": {},
+        "ablation_configuration": {}
+      },
+      "execution_result": {
+        "returned_path": [
+          0,
+          1,
+          4,
+          7,
+          8
+        ],
+        "path_found": true,
+        "search_completed": true,
+        "reachability_proven": true,
+        "optimality_proven": true,
+        "path_cost": 4.0922711137069125,
+        "termination_reason": "path_returned",
+        "improvement_count": 0,
+        "quality_claims": {
+          "quality_bound_proven": false
+        }
+      },
+      "measurement": {
+        "work": {
+          "total_actions": 90,
+          "select_actions": 12,
+          "expand_actions": 9,
+          "evaluate_actions": 22,
+          "relax_actions": 22,
+          "enqueue_actions": 12,
+          "reject_actions": 11,
+          "backtrack_actions": 0,
+          "connect_actions": 0,
+          "candidate_actions": 1,
+          "repair_actions": 0,
+          "bound_actions": 0,
+          "terminate_actions": 1,
+          "hypothesis_actions": 0,
+          "evidence_actions": 0,
+          "handoff_actions": 0,
+          "schedule_actions": 0,
+          "logical_steps": 90,
+          "scheduled_steps": 90,
+          "logical_worker_count": 1
+        },
+        "time_breakdown": {
+          "total_ns": 49078,
+          "solver_ns": 37240,
+          "truss_ns": 49078,
+          "gate_ns": 63101,
+          "anchor_ns": 37240,
+          "total_ms": 0.049078,
+          "solver_ms": 0.03724,
+          "truss_ms": 0.049078,
+          "anchor_ms": 0.03724,
+          "gate_ms": 0.063101
+        },
+        "system_metrics": {
+          "alloc_bytes": 10032,
+          "malloc_count": 169,
+          "gc_count": 0,
+          "heap_alloc_before": 698352,
+          "heap_alloc_after": 708384,
+          "heap_alloc_boundary_max": 708384
+        },
+        "solver_time_ns": 37240,
+        "end_to_end_time_ns": 66848,
+        "solver_time_ms": 0.03724,
+        "end_to_end_time_ms": 0.066848,
+        "zero_duration": false,
+        "timing_valid": true
+      },
+      "observations": {
+        "collector_metrics": {
+          "event_count": 0,
+          "dropped_events": 0,
+          "truncated": false,
+          "observation_ns": 3126,
+          "sink_write_ns": 0,
+          "summary": {
+            "event_count": 0,
+            "first_sequence": 0,
+            "last_sequence": 0,
+            "kind_counts": {},
+            "phase_counts": {},
+            "max_logical_step": 0
+          },
+          "debug_summary": {
+            "candidate_update_count": 0,
+            "fallback_count": 0,
+            "certification_count": 0,
+            "state_reuse_applied_count": 0,
+            "max_frontier_size": 0
+          }
+        }
+      },
+      "references": {
+        "graph_specification": {
+          "generator": "grid",
+          "requested_node_count": 9,
+          "topology": "open"
+        }
+      }
+    }
+  ],
+  "scenario_summaries": [
+    {
+      "scenario_id": "g",
+      "algorithm": "anchor",
+      "query_id": "q",
+      "target_kind": "algorithm",
+      "execution_path": "execute_once",
+      "runs": 1,
+      "path_found_rate": 1,
+      "optimality_proven_rate": 1,
+      "mean_path_cost": 4.0922711137069125,
+      "mean_work_actions": 90,
+      "mean_time_ms": 0.066848,
+      "mean_solver_time_ms": 0.03724,
+      "mean_end_to_end_time_ms": 0.066848,
+      "min_distance": 4.0922711137069125,
+      "max_distance": 4.0922711137069125,
+      "work_statistics": {
+        "count": 1,
+        "mean": 90,
+        "stddev": 0,
+        "min": 90,
+        "p50": 90,
+        "p95": 90,
+        "max": 90,
+        "ci95_lower": 90,
+        "ci95_upper": 90
+      },
+      "solver_time_statistics": {
+        "count": 1,
+        "mean": 0.03724,
+        "stddev": 0,
+        "min": 0.03724,
+        "p50": 0.03724,
+        "p95": 0.03724,
+        "max": 0.03724,
+        "ci95_lower": 0.03724,
+        "ci95_upper": 0.03724
+      },
+      "end_to_end_time_statistics": {
+        "count": 1,
+        "mean": 0.066848,
+        "stddev": 0,
+        "min": 0.066848,
+        "p50": 0.066848,
+        "p95": 0.066848,
+        "max": 0.066848,
+        "ci95_lower": 0.066848,
+        "ci95_upper": 0.066848
+      },
+      "metric_statistics": {
+        "alloc_bytes": {
+          "count": 1,
+          "mean": 10032,
+          "stddev": 0,
+          "min": 10032,
+          "p50": 10032,
+          "p95": 10032,
+          "max": 10032,
+          "ci95_lower": 10032,
+          "ci95_upper": 10032
+        },
+        "anchor_ms": {
+          "count": 1,
+          "mean": 0.03724,
+          "stddev": 0,
+          "min": 0.03724,
+          "p50": 0.03724,
+          "p95": 0.03724,
+          "max": 0.03724,
+          "ci95_lower": 0.03724,
+          "ci95_upper": 0.03724
+        },
+        "best_path_elapsed_ms": {
+          "count": 0,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "bolts_ms": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "bridge_overhead_ratio": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "duplicated_work_ratio": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "enqueue_actions": {
+          "count": 1,
+          "mean": 12,
+          "stddev": 0,
+          "min": 12,
+          "p50": 12,
+          "p95": 12,
+          "max": 12,
+          "ci95_lower": 12,
+          "ci95_upper": 12
+        },
+        "evaluate_actions": {
+          "count": 1,
+          "mean": 22,
+          "stddev": 0,
+          "min": 22,
+          "p50": 22,
+          "p95": 22,
+          "max": 22,
+          "ci95_lower": 22,
+          "ci95_upper": 22
+        },
+        "expand_actions": {
+          "count": 1,
+          "mean": 9,
+          "stddev": 0,
+          "min": 9,
+          "p50": 9,
+          "p95": 9,
+          "max": 9,
+          "ci95_lower": 9,
+          "ci95_upper": 9
+        },
+        "fallback_ms": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "first_path_elapsed_ms": {
+          "count": 0,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "gc_count": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "improvement_count": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "malloc_count": {
+          "count": 1,
+          "mean": 169,
+          "stddev": 0,
+          "min": 169,
+          "p50": 169,
+          "p95": 169,
+          "max": 169,
+          "ci95_lower": 169,
+          "ci95_upper": 169
+        },
+        "relax_actions": {
+          "count": 1,
+          "mean": 22,
+          "stddev": 0,
+          "min": 22,
+          "p50": 22,
+          "p95": 22,
+          "max": 22,
+          "ci95_lower": 22,
+          "ci95_upper": 22
+        },
+        "state_reuse_ratio": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        }
+      },
+      "ablation": {}
+    },
+    {
+      "scenario_id": "g",
+      "algorithm": "dijkstra",
+      "query_id": "q",
+      "target_kind": "bolts_solver",
+      "execution_path": "execute_once",
+      "runs": 1,
+      "path_found_rate": 1,
+      "optimality_proven_rate": 1,
+      "mean_path_cost": 4.071663072768391,
+      "mean_work_actions": 88,
+      "mean_time_ms": 0.644366,
+      "mean_solver_time_ms": 0.051401,
+      "mean_end_to_end_time_ms": 0.644366,
+      "min_distance": 4.071663072768391,
+      "max_distance": 4.071663072768391,
+      "work_statistics": {
+        "count": 1,
+        "mean": 88,
+        "stddev": 0,
+        "min": 88,
+        "p50": 88,
+        "p95": 88,
+        "max": 88,
+        "ci95_lower": 88,
+        "ci95_upper": 88
+      },
+      "solver_time_statistics": {
+        "count": 1,
+        "mean": 0.051401,
+        "stddev": 0,
+        "min": 0.051401,
+        "p50": 0.051401,
+        "p95": 0.051401,
+        "max": 0.051401,
+        "ci95_lower": 0.051401,
+        "ci95_upper": 0.051401
+      },
+      "end_to_end_time_statistics": {
+        "count": 1,
+        "mean": 0.644366,
+        "stddev": 0,
+        "min": 0.644366,
+        "p50": 0.644366,
+        "p95": 0.644366,
+        "max": 0.644366,
+        "ci95_lower": 0.644366,
+        "ci95_upper": 0.644366
+      },
+      "metric_statistics": {
+        "alloc_bytes": {
+          "count": 1,
+          "mean": 10840,
+          "stddev": 0,
+          "min": 10840,
+          "p50": 10840,
+          "p95": 10840,
+          "max": 10840,
+          "ci95_lower": 10840,
+          "ci95_upper": 10840
+        },
+        "anchor_ms": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "best_path_elapsed_ms": {
+          "count": 0,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "bolts_ms": {
+          "count": 1,
+          "mean": 0.051401,
+          "stddev": 0,
+          "min": 0.051401,
+          "p50": 0.051401,
+          "p95": 0.051401,
+          "max": 0.051401,
+          "ci95_lower": 0.051401,
+          "ci95_upper": 0.051401
+        },
+        "bridge_overhead_ratio": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "duplicated_work_ratio": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "enqueue_actions": {
+          "count": 1,
+          "mean": 10,
+          "stddev": 0,
+          "min": 10,
+          "p50": 10,
+          "p95": 10,
+          "max": 10,
+          "ci95_lower": 10,
+          "ci95_upper": 10
+        },
+        "evaluate_actions": {
+          "count": 1,
+          "mean": 22,
+          "stddev": 0,
+          "min": 22,
+          "p50": 22,
+          "p95": 22,
+          "max": 22,
+          "ci95_lower": 22,
+          "ci95_upper": 22
+        },
+        "expand_actions": {
+          "count": 1,
+          "mean": 9,
+          "stddev": 0,
+          "min": 9,
+          "p50": 9,
+          "p95": 9,
+          "max": 9,
+          "ci95_lower": 9,
+          "ci95_upper": 9
+        },
+        "fallback_ms": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "first_path_elapsed_ms": {
+          "count": 0,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "gc_count": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "improvement_count": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        },
+        "malloc_count": {
+          "count": 1,
+          "mean": 146,
+          "stddev": 0,
+          "min": 146,
+          "p50": 146,
+          "p95": 146,
+          "max": 146,
+          "ci95_lower": 146,
+          "ci95_upper": 146
+        },
+        "relax_actions": {
+          "count": 1,
+          "mean": 22,
+          "stddev": 0,
+          "min": 22,
+          "p50": 22,
+          "p95": 22,
+          "max": 22,
+          "ci95_lower": 22,
+          "ci95_upper": 22
+        },
+        "state_reuse_ratio": {
+          "count": 1,
+          "mean": 0,
+          "stddev": 0,
+          "min": 0,
+          "p50": 0,
+          "p95": 0,
+          "max": 0,
+          "ci95_lower": 0,
+          "ci95_upper": 0
+        }
+      },
+      "ablation": {}
+    }
+  ]
+}

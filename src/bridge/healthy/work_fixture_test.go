@@ -25,19 +25,20 @@ func TestManualLineGraphWorkFixtures(t *testing.T) {
 	}
 	r := gate.NewRouter()
 
-	bridge, err := r.Route(context.Background(), gate.RouteRequest{SchemaVersion: gate.RouteRequestSchemaV1, Graph: lineGraphInput(), Route: gate.RouteInput{Source: 0, Target: 3, Mode: core.ModeBalanced, Workers: 1}, Observation: gate.ObservationInput{Mode: gate.ObservationOff}}, gate.RouteOptions{})
+	bridge, err := r.Route(context.Background(), gate.RouteRequest{SchemaVersion: gate.RouteRequestSchemaV1, Graph: lineGraphInput(), Route: gate.RouteInput{Source: 0, Target: 3, Mode: core.ModeBalanced, Workers: 1}, Observation: gate.ObservationInput{Mode: gate.ObservationMinimum}}, gate.RouteOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bridge.Work != want["anchor"] {
-		t.Fatalf("bridge work mismatch: got=%+v want=%+v", bridge.Work, want["anchor"])
+	bridgeExpected := core.WorkMetrics{TotalActions: 26, SelectActions: 4, ExpandActions: 4, EvaluateActions: 5, RelaxActions: 5, EnqueueActions: 4, RejectActions: 2, CandidateActions: 1, TerminateActions: 1, LogicalSteps: 26, ScheduledSteps: 26, WorkerCount: 1}
+	if bridge.Work != bridgeExpected {
+		t.Fatalf("bridge work mismatch: got=%+v want=%+v", bridge.Work, bridgeExpected)
 	}
 	if bridge.BudgetLedger == nil {
 		t.Fatal("bridge budget ledger missing")
 	}
 
 	for algorithm, expected := range want {
-		got, err := r.ExecuteOnce(context.Background(), gate.ExecuteRequest{SchemaVersion: gate.ExecuteRequestSchemaV1, Target: gate.ExecuteTargetInput{ID: algorithm}, Graph: lineGraphInput(), Route: gate.RouteInput{Source: 0, Target: 3, Mode: core.ModeBalanced, Workers: 1}, Observation: gate.ObservationInput{Mode: gate.ObservationOff}}, gate.RouteOptions{})
+		got, err := r.ExecuteOnce(context.Background(), gate.ExecuteRequest{SchemaVersion: gate.ExecuteRequestSchemaV1, Target: gate.ExecuteTargetInput{ID: algorithm}, Graph: lineGraphInput(), Route: gate.RouteInput{Source: 0, Target: 3, Mode: core.ModeBalanced, Workers: 1}, Observation: gate.ObservationInput{Mode: gate.ObservationMinimum}}, gate.RouteOptions{})
 		if err != nil {
 			t.Fatalf("%s: %v", algorithm, err)
 		}
@@ -46,4 +47,3 @@ func TestManualLineGraphWorkFixtures(t *testing.T) {
 		}
 	}
 }
-

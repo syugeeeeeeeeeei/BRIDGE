@@ -2,13 +2,20 @@ package ultrasound
 
 import (
 	"context"
-	"encoding/binary"
-	"hash/fnv"
 	"sync"
 	"time"
 
 	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/bearing"
 )
+
+type DebugSummary struct {
+	CandidateUpdateCount   uint64            `json:"candidate_update_count"`
+	FallbackCount          uint64            `json:"fallback_count"`
+	CertificationCount     uint64            `json:"certification_count"`
+	StateReuseAppliedCount uint64            `json:"state_reuse_applied_count"`
+	MaxFrontierSize        uint64            `json:"max_frontier_size"`
+	ComponentEventCounts   map[string]uint64 `json:"component_event_counts,omitempty"`
+}
 
 type CollectorMetrics struct {
 	EventCount     uint64         `json:"event_count"`
@@ -21,6 +28,7 @@ type CollectorMetrics struct {
 	Summary        TraceSummary   `json:"summary"`
 	QualityHistory []QualityPoint `json:"quality_history,omitempty"`
 	BudgetHistory  []BudgetPoint  `json:"budget_history,omitempty"`
+	DebugSummary   DebugSummary   `json:"debug_summary,omitempty"`
 }
 
 type Collector struct {
@@ -30,38 +38,35 @@ type Collector struct {
 	start, last time.Time
 	seq         uint64
 	maxEvents   uint64
-	sampleRate  float64
-	sampleSeed  uint64
-	seen        uint64
 	metrics     CollectorMetrics
-	events      []bearing.Event
 	err         error
 	closed      bool
 }
 
 func NewCollector(mode string, sink EventSink) *Collector {
-	return NewCollectorConfigured(mode, sink, 0, 1, 0)
+	return NewCollectorWithLimit(mode, sink, 0)
 }
 func NewCollectorWithLimit(mode string, sink EventSink, maxEvents uint64) *Collector {
-	return NewCollectorConfigured(mode, sink, maxEvents, 1, 0)
-}
-func NewCollectorConfigured(mode string, sink EventSink, maxEvents uint64, sampleRate float64, sampleSeed uint64) *Collector {
 	if sink == nil {
 		sink = DiscardSink{}
 	}
-	if sampleRate <= 0 || sampleRate > 1 {
-		sampleRate = 1
-	}
 	now := time.Now()
-	return &Collector{mode: mode, sink: sink, start: now, last: now, maxEvents: maxEvents, sampleRate: sampleRate, sampleSeed: sampleSeed}
+	return &Collector{
+		mode: mode, sink: sink, start: now, last: now, maxEvents: maxEvents,
+		metrics: CollectorMetrics{Summary: TraceSummary{KindCounts: map[string]uint64{}, PhaseCounts: map[string]uint64{}}, DebugSummary: DebugSummary{ComponentEventCounts: map[string]uint64{}}},
+	}
 }
+
 func (c *Collector) Wants(kind string) bool {
 	class := bearing.ClassifyEvent(kind)
 	switch c.mode {
 	case "trace":
 		return true
-	case "aggregate":
-		return class == bearing.ClassControl || class == bearing.ClassCandidate || class == bearing.ClassProfile
+	case "debug":
+		if kind == "state_delta" {
+			return true
+		}
+		return class == bearing.ClassControl || class == bearing.ClassCandidate
 	default:
 		return false
 	}
@@ -71,12 +76,15 @@ func (c *Collector) Observe(e bearing.Event) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	defer func() { c.metrics.ObservationNS += time.Since(started).Nanoseconds() }()
-	if c.err != nil || c.closed || !c.Wants(e.Kind) {
+	if c.err != nil || c.closed {
 		return
 	}
-	c.seen++
-	if !c.sampled(c.seen, e) {
-		c.metrics.DroppedEvents++
+	if c.mode == "debug" {
+		class := bearing.ClassifyEvent(e.Kind)
+		if class != bearing.ClassControl && class != bearing.ClassCandidate && e.Kind != string(bearing.KindFrontierSelected) && e.Kind != string(bearing.KindNodeExpanded) {
+			return
+		}
+	} else if !c.Wants(e.Kind) {
 		return
 	}
 	if c.maxEvents > 0 && c.metrics.EventCount >= c.maxEvents {
@@ -98,27 +106,73 @@ func (c *Collector) Observe(e bearing.Event) {
 		c.metrics.FirstSequence = c.seq
 	}
 	c.metrics.LastSequence = c.seq
-	c.events = append(c.events, cloneEvent(e))
-	// aggregate intentionally performs no trace I/O.
+
 	if c.mode == "trace" {
 		writeStarted := time.Now()
 		c.err = c.sink.WriteEvent(context.Background(), e)
 		c.metrics.SinkWriteNS += time.Since(writeStarted).Nanoseconds()
+		if c.err != nil {
+			return
+		}
 	}
-	if c.err == nil {
-		c.metrics.EventCount++
-		c.metrics.Summary = Summarize(c.events)
-		if e.Kind == "incumbent_updated" || e.Kind == "candidate_submitted" {
-			if d, ok := attrFloat(e.Attributes, "distance"); ok {
-				c.metrics.QualityHistory = append(c.metrics.QualityHistory, QualityPoint{Sequence: e.Sequence, ElapsedNS: e.ElapsedNS, Work: e.WorkAfter, Distance: d})
-			}
+
+	c.metrics.EventCount++
+	s := &c.metrics.Summary
+	s.EventCount++
+	if s.FirstSequence == 0 {
+		s.FirstSequence = e.Sequence
+	}
+	s.LastSequence = e.Sequence
+	s.KindCounts[e.Kind]++
+	s.PhaseCounts[e.Phase]++
+	if e.Component != "" {
+		c.metrics.DebugSummary.ComponentEventCounts[e.Component]++
+	}
+	switch bearing.EventKind(e.Kind) {
+	case bearing.KindCandidateSubmitted, bearing.KindIncumbentUpdated:
+		c.metrics.DebugSummary.CandidateUpdateCount++
+	case bearing.KindFallbackStarted:
+		c.metrics.DebugSummary.FallbackCount++
+	case bearing.KindCertificationStarted:
+		c.metrics.DebugSummary.CertificationCount++
+	case bearing.KindStateReuseApplied:
+		c.metrics.DebugSummary.StateReuseAppliedCount++
+	}
+	if n, ok := attrFloat(e.Attributes, "frontier_size"); ok && n >= 0 && uint64(n) > c.metrics.DebugSummary.MaxFrontierSize {
+		c.metrics.DebugSummary.MaxFrontierSize = uint64(n)
+	}
+	if e.LogicalStep > s.MaxLogicalStep {
+		s.MaxLogicalStep = e.LogicalStep
+	}
+	if e.Kind == "incumbent_updated" || e.Kind == "candidate_submitted" {
+		if d, ok := attrFloat(e.Attributes, "distance"); ok {
+			c.metrics.QualityHistory = append(c.metrics.QualityHistory, QualityPoint{Sequence: e.Sequence, ElapsedNS: e.ElapsedNS, Work: e.WorkAfter, Distance: d})
 		}
-		if e.Kind == "budget_extended" {
-			c.metrics.BudgetHistory = append(c.metrics.BudgetHistory, BudgetPoint{Sequence: e.Sequence, Work: e.WorkAfter, FromExpand: uint64(attrUint32(e.Attributes, "from_expand")), ToExpand: uint64(attrUint32(e.Attributes, "to_expand"))})
-		}
+	}
+	if e.Kind == "budget_extended" {
+		c.metrics.BudgetHistory = append(c.metrics.BudgetHistory, BudgetPoint{Sequence: e.Sequence, Work: e.WorkAfter, FromExpand: uint64(attrUint32(e.Attributes, "from_expand")), ToExpand: uint64(attrUint32(e.Attributes, "to_expand"))})
 	}
 }
-func (c *Collector) Metrics() CollectorMetrics        { c.mu.Lock(); defer c.mu.Unlock(); return c.metrics }
+func (c *Collector) Metrics() CollectorMetrics {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return cloneMetrics(c.metrics)
+}
+func cloneMetrics(m CollectorMetrics) CollectorMetrics {
+	m.Summary.KindCounts = cloneCounts(m.Summary.KindCounts)
+	m.Summary.PhaseCounts = cloneCounts(m.Summary.PhaseCounts)
+	m.QualityHistory = append([]QualityPoint(nil), m.QualityHistory...)
+	m.BudgetHistory = append([]BudgetPoint(nil), m.BudgetHistory...)
+	m.DebugSummary.ComponentEventCounts = cloneCounts(m.DebugSummary.ComponentEventCounts)
+	return m
+}
+func cloneCounts(in map[string]uint64) map[string]uint64 {
+	out := make(map[string]uint64, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
 func (c *Collector) ObservationMode() string          { return c.mode }
 func (c *Collector) ObservationEventCount() uint64    { return c.Metrics().EventCount }
 func (c *Collector) ObservationDroppedEvents() uint64 { return c.Metrics().DroppedEvents }
@@ -147,19 +201,4 @@ func (c *Collector) Close(ctx context.Context) error {
 		return err
 	}
 	return closeErr
-}
-
-func (c *Collector) sampled(ordinal uint64, e bearing.Event) bool {
-	if c.sampleRate >= 1 {
-		return true
-	}
-	h := fnv.New64a()
-	var b [8]byte
-	binary.LittleEndian.PutUint64(b[:], c.sampleSeed)
-	_, _ = h.Write(b[:])
-	binary.LittleEndian.PutUint64(b[:], ordinal)
-	_, _ = h.Write(b[:])
-	_, _ = h.Write([]byte(e.Kind))
-	threshold := uint64(c.sampleRate * float64(^uint64(0)))
-	return h.Sum64() <= threshold
 }

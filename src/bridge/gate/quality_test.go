@@ -15,9 +15,8 @@ func TestQualityPreservesEarlierEqualDistanceCandidate(t *testing.T) {
 	if !res.Found || res.Distance != 2 {
 		t.Fatalf("unexpected quality result: %+v", res)
 	}
-	// Python reference keeps the earlier candidate when certification returns an
-	// equal distance. Exact/certified flags therefore remain those of ANCHOR.
-	if res.Exact || res.QualityCertified {
-		t.Fatalf("Python parity regression: %+v", res)
+	// v0.15.0 ranks proof strength before equal distance and Work.
+	if !res.Exact || !res.QualityCertified {
+		t.Fatalf("certified candidate was not preferred: %+v", res)
 	}
 }

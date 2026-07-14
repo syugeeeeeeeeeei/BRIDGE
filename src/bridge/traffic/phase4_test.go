@@ -11,10 +11,10 @@ func TestPhase4AblationAndFailureContracts(t *testing.T) {
 	s := BenchmarkScenario{
 		SchemaVersion: BenchmarkSchemaV1,
 		Suite:         SuiteSpec{ID: "phase4"},
-		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}, Jobs: 1},
+		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}},
 		Algorithms:    []string{"bridge"},
-		Observation:   ObservationSpec{Mode: "aggregate", SampleRate: 1},
-		Scenarios:     []ScenarioCase{{ID: "budget", Graph: GeneratorSpec{Generator: "grid", Nodes: 25, Topology: "open"}, Endpoints: EndpointSpec{Strategy: "generator_default_endpoints"}, Route: RouteSpec{Mode: core.ModeQuality, Workers: 1}, Budget: BudgetSpec{TotalWork: &budget}, Ablation: AblationSpec{DisableFallback: true, DisableCertification: true}}},
+		Observation:   ObservationSpec{Mode: "debug"},
+		Scenarios:     []ScenarioCase{{ID: "budget", Graph: GeneratorSpec{Generator: "grid", Nodes: 25, Topology: "open"}, Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}}, Route: RouteSpec{Mode: core.ModeQuality, Workers: 1}, Budget: BudgetSpec{WorkLimit: &budget}, Ablation: AblationSpec{DisableFallback: true, DisableCertification: true}}},
 	}
 	got, err := RunScenario(context.Background(), s)
 	if err != nil {

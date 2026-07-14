@@ -1,0 +1,46 @@
+{
+  "schema_version": "bridge.benchmark.v3",
+  "suite": {
+    "id": "h"
+  },
+  "execution": {
+    "repetitions": 1,
+    "seeds": [
+      1
+    ]
+  },
+  "algorithms": [
+    "dijkstra",
+    "anchor"
+  ],
+  "observation": {
+    "mode": "minimum"
+  },
+  "output": {
+    "directory": "./artifacts"
+  },
+  "scenarios": [
+    {
+      "id": "g",
+      "graph": {
+        "generator": "grid",
+        "requested_node_count": 9,
+        "topology": "open"
+      },
+      "queries": [
+        {
+          "id": "q",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ],
+      "route": {
+        "mode": "balanced",
+        "logical_worker_count": 1
+      },
+      "budget": {},
+      "ablation": {}
+    }
+  ]
+}

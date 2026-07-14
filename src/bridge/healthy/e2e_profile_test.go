@@ -13,13 +13,13 @@ func TestTraceWorkValidationEndToEnd(t *testing.T) {
 	scenario := traffic.BenchmarkScenario{
 		SchemaVersion: traffic.BenchmarkSchemaV1,
 		Suite:         traffic.SuiteSpec{ID: "healthy-profile-e2e"},
-		Execution:     traffic.ExecutionSpec{Repetitions: 1, Seeds: []int64{7}, Jobs: 1},
+		Execution:     traffic.ExecutionSpec{Repetitions: 1, Seeds: []int64{7}},
 		Algorithms:    []string{"bridge", "anchor", "dijkstra", "bidirectional_dijkstra", "astar", "weighted_astar", "reachability"},
-		Observation:   traffic.ObservationSpec{Mode: "trace", SampleRate: 1},
-		Output:        traffic.OutputSpec{OutputDir: dir, SaveRawResults: true, SaveTrace: true},
-		Scenarios:     []traffic.ScenarioCase{{ID: "line", Graph: traffic.GeneratorSpec{Generator: "grid", Width: 4, Height: 1, Topology: "open"}, Queries: []traffic.QuerySpec{{ID: "q", Strategy: "explicit_endpoints", Source: u32(0), Target: u32(3)}}, Route: traffic.RouteSpec{Mode: core.ModeBalanced, Workers: 1}, Budget: traffic.BudgetSpec{TotalWork: u64(10000)}}},
+		Observation:   traffic.ObservationSpec{Mode: "trace"},
+		Output:        traffic.OutputSpec{Directory: dir},
+		Scenarios:     []traffic.ScenarioCase{{ID: "line", Graph: traffic.GeneratorSpec{Generator: "grid", Width: 4, Height: 1, Topology: "open"}, Queries: []traffic.QuerySpec{{ID: "q", Selection: traffic.QuerySelectionSpec{Method: "explicit", Source: u32(0), Target: u32(3)}}}, Route: traffic.RouteSpec{Mode: core.ModeBalanced, Workers: 1}, Budget: traffic.BudgetSpec{WorkLimit: u64(10000)}}},
 	}
-	artifact, err := traffic.RunScenarioWithOptions(context.Background(), scenario, traffic.RunScenarioOptions{Overwrite: true})
+	artifact, err := traffic.RunScenarioWithOptions(context.Background(), scenario, traffic.RunScenarioOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
