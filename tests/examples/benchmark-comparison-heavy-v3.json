@@ -22,7 +22,7 @@
     "reachability"
   ],
   "output": {
-    "directory": "./others/results/benchmark-comparison-heavy-v2"
+    "directory": "./artifact"
   },
   "scenarios": [
     {
