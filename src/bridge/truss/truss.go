@@ -102,6 +102,7 @@ func handoffTelemetryUint(m map[string]any, key string) uint64 {
 }
 
 func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (core.RouteResult, error) {
+	requestAdaptationSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", "", "TRUSS", "request_adaptation")
 	if r.Workers == 0 {
 		r.Workers = 1
 	}
@@ -109,28 +110,52 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 		r.Mode = core.ModeBalanced
 	}
 	if err := r.Validate(g); err != nil {
+		requestAdaptationSpan.Finish(true)
 		return core.RouteResult{Distance: math.Inf(1), ErrorCode: core.ErrInvalidRequest, TerminationStatus: core.TerminationInvalid}, err
 	}
+	requestAdaptationSpan.Finish(false)
 	started := time.Now()
+	routeLifecycle := bearing.StartLifecycle(t.Observer, "", "bridge-route", "", "TRUSS", "route")
+	defer routeLifecycle.Finish(false)
+	routeSpan := routeLifecycle.ID()
+	deadlineSetupSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", routeSpan, "TRUSS", "deadline_setup")
 	if r.DeadlineMS != nil {
 		var cancel context.CancelFunc
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(*r.DeadlineMS*float64(time.Millisecond)))
 		defer cancel()
 	}
+	deadlineSetupSpan.Finish(false)
 
+	budgetSetupSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", routeSpan, "TRUSS", "budget_setup")
 	budget := NewBudgetManager(r.WorkBudget)
+	budgetSetupSpan.Finish(false)
+	observerSetupSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", routeSpan, "TRUSS", "observer_setup")
 	routeObserver := newSequencedObserver(t.Observer)
-	routeObserver.Observe(bearing.Event{TaskID: "bridge-route", Component: "TRUSS", Phase: "orchestration", Kind: "search_started", Attributes: map[string]any{"mode": string(r.Mode)}})
+	if bearing.Wants(routeObserver, "search_started") {
+		routeObserver.Observe(bearing.Event{TaskID: "bridge-route", Component: "TRUSS", Phase: "orchestration", Kind: "search_started", Attributes: map[string]any{"mode": string(r.Mode)}})
+	}
+	observerSetupSpan.Finish(false)
+	policySetupSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", routeSpan, "TRUSS", "policy_setup")
 	weight := anchor.RecommendedWeight(g, r.Mode)
 	if budget.Grant(1) < 1 || !budget.Consume(1) {
+		policySetupSpan.Finish(true)
 		return core.RouteResult{Distance: math.Inf(1), BudgetExhausted: true, ErrorCode: core.ErrBudgetExhausted, TerminationStatus: core.TerminationUnknownBudget}, nil
 	}
+	policySetupSpan.Finish(false)
+	anchorLifecycle := bearing.StartLifecycle(t.Observer, "", "anchor-session", routeSpan, "ANCHOR", "solve")
+	anchorSpan := anchorLifecycle.ID()
+	sessionCreationSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", anchorSpan, "TRUSS", "session_creation")
 	session, err := anchor.NewHypothesisSession(g, r, routeObserver, "main", "adaptive_fast_path", weight)
 	if err != nil {
+		sessionCreationSpan.Finish(true)
+		anchorLifecycle.Finish(true)
 		return core.RouteResult{}, err
 	}
+	sessionCreationSpan.Finish(false)
+	defer anchorLifecycle.Finish(true)
 
-	traces := []core.TaskTrace{{TaskID: "anchor-main-init", Solver: "anchor/session", Purpose: "initialization", Reason: "single adaptive session", WorkUsed: 1}}
+	traces := make([]core.TaskTrace, 1, 8)
+	traces[0] = core.TaskTrace{TaskID: "anchor-main-init", Solver: "anchor/session", Purpose: "initialization", Reason: "single adaptive session", WorkUsed: 1}
 	var anchorNS, boltsNS int64
 	var epochs, handoffs, reused uint64
 	handoffMetrics := &core.HandoffMetrics{}
@@ -148,6 +173,8 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 		stagnationThreshold = *r.HandoffWorkThreshold
 	}
 
+	adaptiveExecutionSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", anchorSpan, "TRUSS", "adaptive_execution")
+	defer adaptiveExecutionSpan.Finish(true)
 	for !session.Finished() {
 		if ctx.Err() != nil {
 			session.Cancel()
@@ -186,11 +213,12 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 		step := session.Step(ctx, grant)
 		anchorNS += time.Since(st).Nanoseconds()
 		if step.Consumed > grant || !budget.Consume(step.Consumed) {
+			adaptiveExecutionSpan.Finish(true)
 			return core.RouteResult{}, fmt.Errorf("anchor budget accounting failure")
 		}
 		traces = append(traces, core.TaskTrace{TaskID: fmt.Sprintf("anchor-main-epoch-%06d", epochs), Solver: "anchor/session", Purpose: "fast_path", Reason: step.NextAction, Budget: &grant, Found: step.Candidate != nil, WorkUsed: step.Consumed})
 		p := session.Progress()
-		if step.Candidate != nil {
+		if step.Candidate != nil && bearing.Wants(routeObserver, string(bearing.KindCandidateSubmitted)) {
 			routeObserver.Observe(bearing.Event{TaskID: "anchor-main", Component: "ANCHOR", Phase: "candidate", Kind: string(bearing.KindCandidateSubmitted), WorkAfter: budget.Used(), Attributes: map[string]any{"distance": step.Candidate.Distance, "frontier_size": session.MaxFrontier()}})
 		}
 		if shouldReturnCandidate(r, p, budget.Used(), r.WorkBudget) {
@@ -207,6 +235,7 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 				availableState, transferredState := session.HandoffStateStats()
 				localGrant := handoffBudget(g.NodeCount(), transferredState, rem)
 				if localGrant > 0 {
+					handoffSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", anchorSpan, "TRUSS", "conditional_handoff")
 					control.AddAction(string(core.WorkHandoffAction))
 					control.LogicalSteps++
 					control.ScheduledSteps++
@@ -232,6 +261,8 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 					rescueNS := time.Since(st).Nanoseconds()
 					boltsNS += rescueNS
 					if !budget.Consume(rescue.TotalWork()) {
+						handoffSpan.Finish(true)
+						adaptiveExecutionSpan.Finish(true)
 						return core.RouteResult{}, fmt.Errorf("BOLTS budget accounting failure")
 					}
 					traces = append(traces, core.TaskTrace{TaskID: fmt.Sprintf("bolts-rescue-%06d", handoffs), Solver: rescue.SolverName, Purpose: "conditional_handoff", Reason: reason, Budget: &localGrant, Found: rescue.Found, Distance: rescue.Distance, WorkUsed: rescue.TotalWork()})
@@ -242,6 +273,8 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 					if rescue.Found {
 						hr := core.HandoffResult{RequestID: "rescue", Path: rescue.Path, Distance: rescue.Distance, Found: true, Work: rescue.Work}
 						if err := session.ApplyHandoff(hr); err != nil {
+							handoffSpan.Finish(true)
+							adaptiveExecutionSpan.Finish(true)
 							return core.RouteResult{}, err
 						}
 					}
@@ -266,8 +299,10 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 					handoffMetrics.TotalReusedStateUnits += reusedThisHandoff
 					handoffMetrics.TotalPreHandoffWasteWork += waste
 					if rescue.Found {
+						handoffSpan.Finish(false)
 						break
 					}
+					handoffSpan.Finish(false)
 					// Avoid repeatedly paying the same rescue cost.
 					r.Ablation.DisableFallback = true
 				}
@@ -277,9 +312,12 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 			break
 		}
 	}
+	adaptiveExecutionSpan.Finish(false)
 
 	// Final safety handoff: if ANCHOR cannot continue without a candidate,
 	// give BOLTS one continuation attempt even when the threshold boundary was missed.
+	finalHandoffSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", anchorSpan, "TRUSS", "final_handoff")
+	defer finalHandoffSpan.Finish(true)
 	if !session.Progress().Found && !r.Ablation.DisableFallback {
 		rem := budget.Remaining()
 		if rem == nil || *rem > 1 {
@@ -300,6 +338,7 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 				rescueNS := time.Since(st).Nanoseconds()
 				boltsNS += rescueNS
 				if !budget.Consume(rescue.TotalWork()) {
+					finalHandoffSpan.Finish(true)
 					return core.RouteResult{}, fmt.Errorf("BOLTS final handoff budget accounting failure")
 				}
 				boltsWork.Add(rescue.Work)
@@ -308,6 +347,7 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 				pathSeed := handoffTelemetryUint(rescue.Telemetry, "seed_path_contribution_count")
 				if rescue.Found {
 					if err := session.ApplyHandoff(core.HandoffResult{RequestID: "final-rescue", Path: rescue.Path, Distance: rescue.Distance, Found: true, Work: rescue.Work}); err != nil {
+						finalHandoffSpan.Finish(true)
 						return core.RouteResult{}, err
 					}
 					reused += reusedThis
@@ -333,7 +373,13 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 			}
 		}
 	}
+	finalHandoffSpan.Finish(false)
 
+	anchorLifecycle.Finish(false)
+	finalizationSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", routeSpan, "TRUSS", "finalization")
+	defer finalizationSpan.Finish(true)
+	resultIntegrationSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", routeSpan, "TRUSS", "result_integration")
+	defer resultIntegrationSpan.Finish(true)
 	best := session.Result()
 	aggregate := best.Work
 	aggregate.Add(boltsWork)
@@ -350,6 +396,7 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 	} else if best.Found {
 		best.TerminationStatus = core.TerminationFound
 		if r.Mode == core.ModeExact && !r.Ablation.DisableCertification {
+			certificationSpan := bearing.StartLifecycle(t.Observer, "", "bridge-route", routeSpan, "TRUSS", "certification")
 			certBudget := budget.Remaining()
 			if certBudget == nil || *certBudget > 0 {
 				limit := uint64(g.NodeCount() * 16)
@@ -375,6 +422,7 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 					}
 				}
 			}
+			certificationSpan.Finish(false)
 		}
 	} else if budget.Remaining() != nil && *budget.Remaining() == 0 {
 		best.TerminationStatus = core.TerminationUnknownBudget
@@ -409,7 +457,10 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 	best.Telemetry["max_frontier_size"] = session.MaxFrontier()
 	best.Telemetry["state_reuse_applied_count"] = reused
 	best.Telemetry["state_reuse_ratio"] = float64(reused) / float64(maxInt(1, int(best.Work.TotalActions)))
-	routeObserver.Observe(bearing.Event{TaskID: "bridge-route", Component: "TRUSS", Phase: "orchestration", Kind: "search_finished", WorkAfter: best.Work.TotalActions, Attributes: map[string]any{"found": best.Found, "distance": best.Distance}})
+	if bearing.Wants(routeObserver, "search_finished") {
+		routeObserver.Observe(bearing.Event{TaskID: "bridge-route", Component: "TRUSS", Phase: "orchestration", Kind: "search_finished", WorkAfter: best.Work.TotalActions, Attributes: map[string]any{"found": best.Found, "distance": best.Distance}})
+	}
+	resultIntegrationSpan.Finish(false)
 	best.Telemetry["solver_time_ns"] = solverNS
 	best.Telemetry["adaptive_stagnation_threshold"] = stagnationThreshold
 	if handoffMetrics.Count > 0 {
@@ -430,6 +481,7 @@ func (t *Truss) Route(ctx context.Context, g core.Graph, r core.RouteRequest) (c
 		dominantTime = "ORCHESTRATION"
 	}
 	best.BottleneckProfile = &core.BottleneckProfile{AnchorWork: by[core.ComponentAnchor], BoltsWork: by[core.ComponentBolts], TrussWork: by[core.ComponentTruss], AnchorTimeNS: anchorNS, BoltsTimeNS: boltsNS, OrchestrationTimeNS: maxInt64(0, totalNS-solverNS), EpochCount: epochs, MaxFrontierSize: uint64(session.MaxFrontier()), CandidateUpdateCount: session.CandidateUpdates(), WorksSinceCandidateUpdate: session.WorksSinceCandidateUpdate(), DominantWorkComponent: dominantWork, DominantTimeComponent: dominantTime, ProgressSamples: session.ProgressSamples()}
+	finalizationSpan.Finish(false)
 	return best, nil
 }
 

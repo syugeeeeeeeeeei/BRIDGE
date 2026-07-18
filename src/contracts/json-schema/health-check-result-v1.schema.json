@@ -14,7 +14,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.health.result.v2"
+      "const": "bridge.health.result.v1"
     },
     "source_artifact_id": {
       "type": "string"

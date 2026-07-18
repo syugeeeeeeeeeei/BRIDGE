@@ -50,3 +50,7 @@ GATEが返した`search_completed`、`reachability_proven`、`optimality_proven`
 - warm-up非観測テスト
 - deterministic repetition test
 - structure別ablation test
+
+## Benchmark lifecycle observation
+
+TRAFFIC MUST publish low-frequency lifecycle boundaries through BEARING for benchmark run, graph generation, query generation, and graph conversion. HEALTHY remains independent; its caller publishes the evaluation boundary. Artifact encoding, integrity calculation, file I/O, and compression are benchmark-process responsibilities and MUST remain outside solver/request timing.

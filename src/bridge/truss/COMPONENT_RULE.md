@@ -72,3 +72,13 @@ Reachability証明をOptimality証明として扱わない。
 - TRUSSはANCHORを単一Sessionで開始する。
 - BOLTSは固定実行せず、停滞または明示的Certification要求時だけ起動する。
 - BOLTS移行前後のWork、Handoff回数、State Reuseを記録する。
+
+## 7. 観測規則
+
+- TRUSSはULTRASOUNDへ直接依存せず、内部処理の観測はBEARINGのLifecycle Eventを介して行う。
+- minimum観測では、1 Route当たり定数回または条件成立時のみ発生する低頻度境界に限定する。
+- Epoch、候補、Node、Edge単位の高頻度Timing Spanをminimumへ追加してはならない。
+- 標準の内部区間は `request_adaptation`、`deadline_setup`、`budget_setup`、`observer_setup`、`policy_setup`、`session_creation`、`adaptive_execution`、`final_handoff`、`finalization`、`result_integration` とする。
+- `conditional_handoff`および`certification`は、該当処理が実行された場合にのみ発行する。
+- 観測無効時にはSpan ID、Timestamp、Payload、Closureその他の観測用動的Allocationを生成してはならない。
+- 観測の有無によってPath、Cost、Work、Solver選択、Handoff結果、停止理由を変更してはならない。

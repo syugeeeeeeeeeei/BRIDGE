@@ -1,0 +1,78 @@
+{
+  "schema_version": "bridge.benchmark.v1",
+  "suite": {
+    "id": "benchmark-regression-medium-v1",
+    "description": "Canonical performance regression suite for normal release gating."
+  },
+  "execution": {
+    "repetitions": 5,
+    "warmup_runs": 1,
+    "seeds": [
+      7,
+      19
+    ],
+    "randomize_order": true,
+    "run_timeout": "45s"
+  },
+  "algorithms": [
+    "bridge",
+    "dijkstra",
+    "astar"
+  ],
+  "scenarios": [
+    {
+      "id": "grid-open-1000",
+      "graph": {
+        "generator": "grid",
+        "requested_node_count": 1000,
+        "topology": "open"
+      },
+      "route": {
+        "logical_worker_count": 1,
+        "mode": "balanced"
+      },
+      "budget": {
+        "work_limit": 3000000,
+        "search_time_limit": "30s"
+      },
+      "queries": [
+        {
+          "id": "default",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ]
+    },
+    {
+      "id": "random-geometric-1000",
+      "graph": {
+        "generator": "random_geometric",
+        "requested_node_count": 1000,
+        "neighbor_candidate_count": 8
+      },
+      "route": {
+        "logical_worker_count": 1,
+        "mode": "balanced"
+      },
+      "budget": {
+        "work_limit": 3000000,
+        "search_time_limit": "30s"
+      },
+      "queries": [
+        {
+          "id": "default",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ]
+    }
+  ],
+  "observation": {
+    "mode": "minimum"
+  },
+  "output": {
+    "directory": "./artifacts/regression-medium"
+  }
+}

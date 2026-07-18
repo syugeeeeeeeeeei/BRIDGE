@@ -15,4 +15,8 @@
 | TRAFFIC | `src/bridge/traffic/COMPONENT_RULE.md` | benchmark、統計、fail-closedデータ検証 |
 | HEALTHY | `src/bridge/healthy/COMPONENT_RULE.md` | 保存済みartifactの整合監査と再構成 |
 
+## コンポーネント階層
+
+この表に掲載する大文字名はメインコンポーネントである。各メインコンポーネント内部のScenario、Runner、Validation、Oracle等はサブコンポーネントであり、親の`COMPONENT_RULE.md`を継承する。`CORE`は共有基盤として規則管理する例外である。正式定義は`docs/WORD_DEFINITION.md`の`main-component`および`subcomponent`を参照する。
+
 上位規範は`docs/ARCHITECTURE_RULE.md`、用語の正本は`docs/WORD_DEFINITION.md`である。

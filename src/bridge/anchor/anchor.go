@@ -97,6 +97,18 @@ func RecommendedWeight(g core.Graph, mode core.RouteMode) float64 {
 }
 
 func graphFeatures(g core.Graph) features {
+	if provider, ok := g.(core.GraphAnalysisProvider); ok {
+		p := provider.GraphAnalysisProfile()
+		return features{
+			hasPos:             p.HasPosition,
+			degreeCV:           p.DegreeCV,
+			maxMeanDegreeRatio: p.MaxMeanDegreeRatio,
+			top1DegreeShare:    p.TopOneDegreeShare,
+			weightGeoRatioCV:   p.WeightGeoRatioCV,
+			edgeP95Median:      p.EdgeP95Median,
+			edgeMaxMedian:      p.EdgeMaxMedian,
+		}
+	}
 	n := g.NodeCount()
 	if n == 0 {
 		return features{}
@@ -184,9 +196,13 @@ func graphFeatures(g core.Graph) features {
 }
 
 func (s Solver) Solve(ctx context.Context, g core.Graph, r core.RouteRequest, b core.WorkBudget, o bearing.Observer) core.RouteResult {
+	lifecycle := bearing.StartLifecycle(o, "", "anchor", "", "ANCHOR", "solve")
+	failedLifecycle := false
+	defer func() { lifecycle.Finish(failedLifecycle) }()
 	started := time.Now()
 	sess, err := NewSession(g, r, o)
 	if err != nil {
+		failedLifecycle = true
 		return core.RouteResult{SolverName: "anchor", TerminationStatus: core.TerminationInvalid, ErrorCode: core.ErrInvalidRequest}
 	}
 	grant := uint64(^uint64(0) >> 1)

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge.local/schemas/benchmark-scenario-v1.schema.json",
+  "title": "BRIDGE Benchmark Scenario v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "suite", "execution", "algorithms", "observation", "output", "scenarios"],
+  "properties": {
+    "schema_version": {"const": "bridge.benchmark.v1"},
+    "suite": {"type": "object", "additionalProperties": false, "required": ["id"], "properties": {"id": {"type": "string", "pattern": "^[A-Za-z0-9_-]+$"}, "description": {"type": "string"}}},
+    "execution": {"type": "object", "additionalProperties": false, "required": ["seeds"], "properties": {"seeds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "integer"}}, "repetitions": {"type": "integer", "minimum": 1}, "warmup_runs": {"type": "integer", "minimum": 0}, "run_timeout": {"type": "string"}, "randomize_order": {"type": "boolean"}}},
+    "algorithms": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "observation": {"type": "object", "additionalProperties": false, "required": ["mode"], "properties": {"mode": {"enum": ["minimum", "debug", "trace"]}}},
+    "output": {"type": "object", "additionalProperties": false, "required": ["directory"], "properties": {"directory": {"type": "string", "minLength": 1}}},
+    "scenarios": {"type": "array", "minItems": 1, "items": {"type": "object", "additionalProperties": false, "required": ["id", "graph", "queries"], "properties": {"id": {"type": "string"}, "graph": {"type": "object"}, "queries": {"type": "array", "minItems": 1}, "route": {"type": "object"}, "budget": {"type": "object"}, "ablation": {"type": "object"}}}}
+  }
+}

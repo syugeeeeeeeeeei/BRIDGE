@@ -42,10 +42,10 @@ func TestPublicRouterObservationMemory(t *testing.T) {
 }
 func TestStrictJSONRejectsUnknownAndDuplicate(t *testing.T) {
 	var req RouteRequest
-	if err := DecodeStrictJSON([]byte(`{"schema_version":"bridge.route.request.v2","schema_version":"bridge.route.request.v2"}`), &req); err == nil || !strings.Contains(err.Error(), "duplicate") {
+	if err := DecodeStrictJSON([]byte(`{"schema_version":"bridge.route.request.v1","schema_version":"bridge.route.request.v1"}`), &req); err == nil || !strings.Contains(err.Error(), "duplicate") {
 		t.Fatalf("duplicate not rejected: %v", err)
 	}
-	if err := DecodeStrictJSON([]byte(`{"schema_version":"bridge.route.request.v2","graph":{"type":"inline"},"route":{"source":0,"target":0},"unknown":1}`), &req); err == nil {
+	if err := DecodeStrictJSON([]byte(`{"schema_version":"bridge.route.request.v1","graph":{"type":"inline"},"route":{"source":0,"target":0},"unknown":1}`), &req); err == nil {
 		t.Fatal("unknown field not rejected")
 	}
 }
@@ -83,5 +83,22 @@ func TestObservationDoesNotChangeRouteDecision(t *testing.T) {
 	}
 	if len(sink.Events()) == 0 {
 		t.Fatal("expected trace events")
+	}
+}
+
+func TestRouteMinimumObservationIncludesLifecycleSpans(t *testing.T) {
+	collector := ultrasound.NewCollector("minimum", nil)
+	req := validPublicRequest()
+	req.RequestID = "lifecycle-test"
+	got, err := NewRouter().Route(context.Background(), req, RouteOptions{Observation: ObservationOptions{Mode: ObservationMinimum, Observer: collector, Reporter: collector}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Observation == nil || got.Observation.Spans == nil {
+		t.Fatalf("lifecycle spans missing: %+v", got.Observation)
+	}
+	metrics := collector.Metrics()
+	if len(metrics.Spans.Completed) == 0 || metrics.Spans.Incomplete != 0 {
+		t.Fatalf("invalid lifecycle spans: %+v", metrics.Spans)
 	}
 }

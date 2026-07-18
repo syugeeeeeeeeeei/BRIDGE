@@ -1,0 +1,12 @@
+{
+  "schema_version": "bridge.benchmark.v1",
+  "suite": {"id": "benchmark-regression-small-v1", "description": "Pull-request performance regression suite for fixed-overhead and small graph behavior."},
+  "execution": {"repetitions": 20, "warmup_runs": 3, "seeds": [1, 7, 19], "randomize_order": true, "run_timeout": "20s"},
+  "algorithms": ["bridge", "dijkstra", "astar"],
+  "scenarios": [
+    {"id": "grid-open-400", "graph": {"generator": "grid", "requested_node_count": 400, "topology": "open"}, "route": {"logical_worker_count": 1, "mode": "balanced"}, "budget": {"work_limit": 500000, "search_time_limit": "10s"}, "queries": [{"id": "default", "selection": {"method": "generator_default"}}]},
+    {"id": "random-geometric-500", "graph": {"generator": "random_geometric", "requested_node_count": 500, "neighbor_candidate_count": 8}, "route": {"logical_worker_count": 1, "mode": "balanced"}, "budget": {"work_limit": 750000, "search_time_limit": "10s"}, "queries": [{"id": "default", "selection": {"method": "generator_default"}}]}
+  ],
+  "observation": {"mode": "minimum"},
+  "output": {"directory": "./artifacts/regression-small"}
+}

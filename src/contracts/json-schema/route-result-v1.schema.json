@@ -17,7 +17,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.route.result.v2"
+      "const": "bridge.route.result.v1"
     },
     "request_id": {
       "type": "string"

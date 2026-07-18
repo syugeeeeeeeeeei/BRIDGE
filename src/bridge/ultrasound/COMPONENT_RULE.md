@@ -41,3 +41,17 @@
 - state reuse・duplicate work算出テスト
 - replay決定論性テスト
 - Observer非干渉テスト
+
+## Lifecycle span aggregation
+
+- ULTRASOUND pairs lifecycle `started` and `completed`/`failed` events by run and span identifiers.
+- ULTRASOUND calculates durations from observer-assigned monotonic elapsed timestamps.
+- Incomplete, duplicate-start, and orphan-completion spans MUST be reported explicitly.
+- ULTRASOUND MUST NOT alter routing, solver selection, Work, or termination decisions.
+
+## Collector lifecycle
+
+- A Collector is a one-run observation object by default.
+- Reuse across runs requires `Close` followed by `Reset`.
+- Completed spans and event history MUST NOT silently accumulate across independent runs.
+- Benchmark and server integrations SHOULD create one Collector per request/run unless explicit reuse is required.

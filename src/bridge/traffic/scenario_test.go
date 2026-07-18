@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/ultrasound"
 )
 
 func TestRunScenario(t *testing.T) {
@@ -130,5 +132,69 @@ func TestScenarioRejectsGraphSnapshotOutputWithoutDir(t *testing.T) {
 	s.Output.Directory = ""
 	if err := s.Validate(); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+func TestTraceDirectoryUsesRunOrdinalAndWritesGraphSnapshot(t *testing.T) {
+	s := validScenario()
+	s.Observation.Mode = "trace"
+	r, err := RunScenarioWithOptions(context.Background(), s, RunScenarioOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Runs) != 1 {
+		t.Fatalf("runs=%d", len(r.Runs))
+	}
+	run := r.Runs[0]
+	expectedDir := filepath.ToSlash(filepath.Join("traces", "run-000001"))
+	if filepath.ToSlash(filepath.Dir(run.References.TracePath)) != expectedDir {
+		t.Fatalf("trace directory=%q expected=%q", filepath.Dir(run.References.TracePath), expectedDir)
+	}
+	if filepath.ToSlash(filepath.Dir(run.References.GraphSnapshotPath)) != expectedDir {
+		t.Fatalf("graph directory=%q expected=%q", filepath.Dir(run.References.GraphSnapshotPath), expectedDir)
+	}
+	if _, err := os.Stat(filepath.Join(r.OutputDirectory, filepath.FromSlash(run.References.GraphSnapshotPath))); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestBenchmarkRunSpanExcludesGraphGeneration(t *testing.T) {
+	s := BenchmarkScenario{
+		SchemaVersion: BenchmarkSchemaV1,
+		Suite:         SuiteSpec{ID: "timing-boundary"},
+		Execution:     ExecutionSpec{Repetitions: 1, Seeds: []int64{1}},
+		Algorithms:    []string{"bridge"},
+		Observation:   ObservationSpec{Mode: "minimum"},
+		Scenarios: []ScenarioCase{{
+			ID:      "grid",
+			Graph:   GeneratorSpec{Generator: "grid", Nodes: 16, Topology: "open"},
+			Queries: []QuerySpec{{ID: "default", Selection: QuerySelectionSpec{Method: "generator_default"}}},
+		}},
+	}
+	r, err := RunScenario(context.Background(), s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(r.Runs) != 1 || r.Runs[0].Observations.CollectorMetrics == nil {
+		t.Fatalf("unexpected run observations: %+v", r.Runs)
+	}
+	var graphGeneration, benchmarkRun *ultrasound.SpanMetric
+	for i := range r.Runs[0].Observations.CollectorMetrics.Spans.Completed {
+		span := &r.Runs[0].Observations.CollectorMetrics.Spans.Completed[i]
+		switch span.Operation {
+		case "graph_generation":
+			graphGeneration = span
+		case "benchmark_run":
+			benchmarkRun = span
+		}
+	}
+	if graphGeneration == nil || benchmarkRun == nil {
+		t.Fatalf("required spans missing: %+v", r.Runs[0].Observations.CollectorMetrics.Spans.Completed)
+	}
+	if graphGeneration.ParentSpanID != "" {
+		t.Fatalf("graph generation must be a setup reference span, parent=%q", graphGeneration.ParentSpanID)
+	}
+	if graphGeneration.CompletedNS > benchmarkRun.StartedNS {
+		t.Fatalf("benchmark run started before graph generation completed: graph=%+v run=%+v", *graphGeneration, *benchmarkRun)
 	}
 }

@@ -1,0 +1,14 @@
+{
+  "completed_at": "2026-07-16T06:03:12.432646176Z",
+  "execution_id": "1784181792430-6e69b213986beee00213",
+  "observation_mode": "minimum",
+  "output_directory": "artifacts/h/1784181792430-6e69b213986beee00213",
+  "run_order": [
+    "g/dijkstra/g/seed-1/q/rep-1",
+    "g/anchor/g/seed-1/q/rep-1"
+  ],
+  "scenario_schema_version": "bridge.benchmark.v1",
+  "schema_version": "bridge.benchmark.execution.v1",
+  "started_at": "2026-07-16T06:03:12.429776085Z",
+  "suite_id": "h"
+}

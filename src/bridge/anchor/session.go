@@ -233,10 +233,10 @@ func (s *Session) Step(ctx context.Context, grant uint64) StepResult {
 	}
 	start := s.metrics.TotalActions
 	remaining := func() uint64 { return grant - (s.metrics.TotalActions - start) }
+	stateDeltaEnabled := s.observer != nil && bearing.Wants(s.observer, "state_delta")
+	actionEnabled := s.observer != nil && bearing.Wants(s.observer, "action")
 	emit := func(kind string, attrs map[string]any) {
-		if s.observer != nil && bearing.Wants(s.observer, "state_delta") {
-			s.observer.Observe(bearing.Event{TaskID: "anchor-" + s.hypothesisID, Component: "ANCHOR", Phase: "session", Kind: kind, LogicalStep: s.metrics.LogicalSteps, ScheduledStep: s.metrics.ScheduledSteps, WorkAfter: s.metrics.TotalActions, Attributes: attrs})
-		}
+		s.observer.Observe(bearing.Event{TaskID: "anchor-" + s.hypothesisID, Component: "ANCHOR", Phase: "session", Kind: kind, LogicalStep: s.metrics.LogicalSteps, ScheduledStep: s.metrics.ScheduledSteps, WorkAfter: s.metrics.TotalActions, Attributes: attrs})
 	}
 	consume := func(k core.WorkAction) {
 		s.metrics.AddAction(string(k))
@@ -262,7 +262,7 @@ func (s *Session) Step(ctx context.Context, grant uint64) StepResult {
 				s.nextProgressSampleWork += 64
 			}
 		}
-		if s.observer != nil && bearing.Wants(s.observer, "action") {
+		if actionEnabled {
 			s.observer.Observe(bearing.Event{TaskID: "anchor-" + s.hypothesisID, Component: "ANCHOR", Phase: "session", Kind: "action", Action: string(k), LogicalStep: s.metrics.LogicalSteps + 1, ScheduledStep: s.metrics.ScheduledSteps + 1, WorkBefore: s.metrics.TotalActions - 1, WorkAfter: s.metrics.TotalActions})
 		}
 		s.metrics.LogicalSteps++
@@ -283,11 +283,21 @@ func (s *Session) Step(ctx context.Context, grant uint64) StepResult {
 				s.finished = true
 				if s.best != nil {
 					s.status = core.TerminationFound
-					s.best.Exact = true
-					s.best.QualityCertified = true
-					s.best.LowerBound = s.best.Distance
-					x := 1.0
-					s.best.CertifiedRatio = &x
+					// Exhausting a weighted/inadmissible search frontier proves only that
+					// this search instance has finished. It does not prove global
+					// optimality because settled nodes are not reopened. Exactness is
+					// therefore restricted to admissible ANCHOR sessions.
+					if s.heuristicScale <= 1.0 {
+						s.best.Exact = true
+						s.best.QualityCertified = true
+						s.best.LowerBound = s.best.Distance
+						x := 1.0
+						s.best.CertifiedRatio = &x
+					} else {
+						s.best.Exact = false
+						s.best.QualityCertified = false
+						s.best.CertifiedRatio = nil
+					}
 				} else {
 					s.status = core.TerminationUnreachable
 				}
@@ -298,13 +308,17 @@ func (s *Session) Step(ctx context.Context, grant uint64) StepResult {
 			}
 			consume(core.WorkSelect)
 			it := heap.Pop(&s.q).(qitem)
-			emit("frontier_selected", map[string]any{"node": it.n, "priority": it.pri, "frontier_size": len(s.q)})
+			if stateDeltaEnabled {
+				emit("frontier_selected", map[string]any{"node": it.n, "priority": it.pri, "frontier_size": len(s.q)})
+			}
 			if s.settled[it.n] {
 				continue
 			}
 			consume(core.WorkExpand)
 			s.settled[it.n] = true
-			emit("node_expanded", map[string]any{"node": it.n, "distance": s.dist[it.n], "frontier_size": len(s.q)})
+			if stateDeltaEnabled {
+				emit("node_expanded", map[string]any{"node": it.n, "distance": s.dist[it.n], "frontier_size": len(s.q)})
+			}
 			s.hypotheses[0].Region.Nodes = append(s.hypotheses[0].Region.Nodes, it.n)
 			s.hypotheses[0].Region.Version++
 			v := it.n
@@ -330,7 +344,9 @@ func (s *Session) Step(ctx context.Context, grant uint64) StepResult {
 				}
 				s.best = &r
 				out.Candidate = &r
-				emit("candidate_submitted", map[string]any{"distance": r.Distance, "path": r.Path, "frontier_size": len(s.q)})
+				if stateDeltaEnabled {
+					emit("candidate_submitted", map[string]any{"distance": r.Distance, "path": r.Path, "frontier_size": len(s.q)})
+				}
 				x := r.Distance
 				out.UpperBound = &x
 			}
@@ -351,7 +367,9 @@ func (s *Session) Step(ctx context.Context, grant uint64) StepResult {
 			break
 		}
 		consume(core.WorkEvaluate)
-		emit("edge_evaluated", map[string]any{"from": u, "to": e.To, "weight": e.Weight})
+		if stateDeltaEnabled {
+			emit("edge_evaluated", map[string]any{"from": u, "to": e.To, "weight": e.Weight})
+		}
 		consume(core.WorkRelax)
 		oldDistance := s.dist[e.To]
 		if nd < s.dist[e.To] {
@@ -359,7 +377,9 @@ func (s *Session) Step(ctx context.Context, grant uint64) StepResult {
 			s.prev[e.To] = u
 			s.hasPrev[e.To] = true
 			s.seq++
-			emit("relaxation", map[string]any{"from": u, "to": e.To, "old_distance": oldDistance, "new_distance": nd, "accepted": true})
+			if stateDeltaEnabled {
+				emit("relaxation", map[string]any{"from": u, "to": e.To, "old_distance": oldDistance, "new_distance": nd, "accepted": true})
+			}
 			consume(core.WorkEnqueue)
 			h := s.heuristic(e.To)
 			if h < s.bestHeuristic {
@@ -367,12 +387,16 @@ func (s *Session) Step(ctx context.Context, grant uint64) StepResult {
 			}
 			priority := nd + s.heuristicScale*h
 			heap.Push(&s.q, qitem{n: e.To, pri: priority, seq: s.seq})
-			emit("frontier_enqueued", map[string]any{"node": e.To, "from": u, "priority": priority, "distance": nd})
+			if stateDeltaEnabled {
+				emit("frontier_enqueued", map[string]any{"node": e.To, "from": u, "priority": priority, "distance": nd})
+			}
 			if len(s.q) > s.maxFrontier {
 				s.maxFrontier = len(s.q)
 			}
 		} else {
-			emit("relaxation", map[string]any{"from": u, "to": e.To, "old_distance": oldDistance, "new_distance": nd, "accepted": false})
+			if stateDeltaEnabled {
+				emit("relaxation", map[string]any{"from": u, "to": e.To, "old_distance": oldDistance, "new_distance": nd, "accepted": false})
+			}
 			consume(core.WorkReject)
 		}
 		s.activeEdge++
@@ -489,6 +513,9 @@ func (s *Session) heuristic(n core.NodeID) float64 {
 }
 
 func graphHeuristicUnitScale(g core.Graph) float64 {
+	if provider, ok := g.(core.GraphAnalysisProvider); ok {
+		return provider.GraphAnalysisProfile().HeuristicUnitScale
+	}
 	min := math.Inf(1)
 	for u := 0; u < g.NodeCount(); u++ {
 		pu, ok := g.Position(core.NodeID(u))

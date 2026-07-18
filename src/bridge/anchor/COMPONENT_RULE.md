@@ -59,3 +59,5 @@ ANCHORは中断・再開可能な主探索Sessionを所有する。
 - 固定複数Sessionを常時実行してはならない。
 - 単一主Sessionで開始し、Candidate発見後はMode契約に従って早期返却する。
 - Heuristic計算、観測、Region管理が探索Workを不必要に増幅してはならない。
+- Observation無効時は、state deltaおよびaction Eventの属性を生成前に抑止する。
+- 観測用表現の生成はPath、Cost、Work、Bound、停止条件から独立させる。

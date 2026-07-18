@@ -1,9 +1,13 @@
 class BridgeError(RuntimeError):
-    def __init__(self, message: str, *, exit_code=None, stdout="", stderr=""):
+    def __init__(self, message: str, *, exit_code=None, stdout="", stderr="", code="", category="", retryable=False, request_id=""):
         super().__init__(message)
         self.exit_code = exit_code
         self.stdout = stdout
         self.stderr = stderr
+        self.code = code
+        self.category = category
+        self.retryable = bool(retryable)
+        self.request_id = request_id
 
 class BridgeBinaryNotFoundError(BridgeError): pass
 class BridgeBinaryPermissionError(BridgeError): pass

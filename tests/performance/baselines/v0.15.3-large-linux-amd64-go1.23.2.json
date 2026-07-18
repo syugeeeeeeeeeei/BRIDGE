@@ -1,0 +1,128 @@
+{
+  "schema_version": "bridge.performance-regression-baseline.v1",
+  "suite_id": "benchmark-regression-large-v1",
+  "source_artifact": "1784111259264-055695ddacdd90e31483",
+  "environment": {
+    "go_version": "go1.23.2",
+    "goos": "linux",
+    "goarch": "amd64",
+    "cpus": 56
+  },
+  "policy": {
+    "tier": "large",
+    "semantic": {
+      "path_found_rate_min": 1.0,
+      "exact_algorithms_optimality_rate_min": 1.0,
+      "bridge_false_optimality_max": 0.0,
+      "work_p50_max_increase_ratio": 0.0
+    },
+    "performance": {
+      "solver_time_p50_max_increase_ratio": 0.15,
+      "solver_time_p95_max_increase_ratio": 0.2,
+      "end_to_end_p50_max_increase_ratio": 0.15,
+      "end_to_end_p95_max_increase_ratio": 0.2,
+      "alloc_bytes_p50_max_increase_ratio": 0.1,
+      "alloc_bytes_p95_max_increase_ratio": 0.15
+    },
+    "minimum_sample_count": 3,
+    "environment_match_required": true
+  },
+  "entries": {
+    "grid-open-10000/astar/default": {
+      "scenario_id": "grid-open-10000",
+      "algorithm": "astar",
+      "query_id": "default",
+      "runs": 3,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 1.0,
+      "work_p50": 146307.0,
+      "work_p95": 146307.0,
+      "solver_time_p50_ms": 12.428666,
+      "solver_time_p95_ms": 13.2214652,
+      "end_to_end_p50_ms": 16.199079,
+      "end_to_end_p95_ms": 17.1190257,
+      "alloc_bytes_p50": 6467784.0,
+      "alloc_bytes_p95": 6473025.6
+    },
+    "grid-open-10000/bridge/default": {
+      "scenario_id": "grid-open-10000",
+      "algorithm": "bridge",
+      "query_id": "default",
+      "runs": 3,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 0.0,
+      "work_p50": 2780.0,
+      "work_p95": 2780.0,
+      "solver_time_p50_ms": 2.154638,
+      "solver_time_p95_ms": 2.2767599,
+      "end_to_end_p50_ms": 5.345861,
+      "end_to_end_p95_ms": 5.365256899999999,
+      "alloc_bytes_p50": 3150928.0,
+      "alloc_bytes_p95": 3151151.2
+    },
+    "grid-open-10000/dijkstra/default": {
+      "scenario_id": "grid-open-10000",
+      "algorithm": "dijkstra",
+      "query_id": "default",
+      "runs": 3,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 1.0,
+      "work_p50": 142664.0,
+      "work_p95": 142664.0,
+      "solver_time_p50_ms": 10.641161,
+      "solver_time_p95_ms": 15.128540300000001,
+      "end_to_end_p50_ms": 15.157919,
+      "end_to_end_p95_ms": 20.4346163,
+      "alloc_bytes_p50": 6377928.0,
+      "alloc_bytes_p95": 6378144.0
+    },
+    "maze-10000/astar/default": {
+      "scenario_id": "maze-10000",
+      "algorithm": "astar",
+      "query_id": "default",
+      "runs": 3,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 1.0,
+      "work_p50": 44023.0,
+      "work_p95": 44023.0,
+      "solver_time_p50_ms": 5.153075,
+      "solver_time_p95_ms": 5.385646700000001,
+      "end_to_end_p50_ms": 8.725721,
+      "end_to_end_p95_ms": 8.883287600000001,
+      "alloc_bytes_p50": 3745512.0,
+      "alloc_bytes_p95": 3746448.0
+    },
+    "maze-10000/bridge/default": {
+      "scenario_id": "maze-10000",
+      "algorithm": "bridge",
+      "query_id": "default",
+      "runs": 3,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 0.0,
+      "work_p50": 43972.0,
+      "work_p95": 43972.0,
+      "solver_time_p50_ms": 17.384689,
+      "solver_time_p95_ms": 18.497332,
+      "end_to_end_p50_ms": 21.722067,
+      "end_to_end_p95_ms": 22.298745600000004,
+      "alloc_bytes_p50": 16145800.0,
+      "alloc_bytes_p95": 16171878.4
+    },
+    "maze-10000/dijkstra/default": {
+      "scenario_id": "maze-10000",
+      "algorithm": "dijkstra",
+      "query_id": "default",
+      "runs": 3,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 1.0,
+      "work_p50": 44191.0,
+      "work_p95": 44191.0,
+      "solver_time_p50_ms": 4.576882,
+      "solver_time_p95_ms": 4.5829939,
+      "end_to_end_p50_ms": 6.997233,
+      "end_to_end_p95_ms": 7.3120242,
+      "alloc_bytes_p50": 3755544.0,
+      "alloc_bytes_p95": 3759676.8
+    }
+  }
+}

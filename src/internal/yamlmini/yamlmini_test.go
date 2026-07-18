@@ -6,7 +6,7 @@ import (
 )
 
 func TestToJSON(t *testing.T) {
-	b, err := ToJSON([]byte("schema_version: bridge.benchmark.v2\nalgorithms:\n  - bridge\nexecution:\n  seeds: [1, 2]\n"))
+	b, err := ToJSON([]byte("schema_version: bridge.benchmark.v1\nalgorithms:\n  - bridge\nexecution:\n  seeds: [1, 2]\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -14,7 +14,7 @@ func TestToJSON(t *testing.T) {
 	if err := json.Unmarshal(b, &v); err != nil {
 		t.Fatal(err)
 	}
-	if v["schema_version"] != "bridge.benchmark.v2" {
+	if v["schema_version"] != "bridge.benchmark.v1" {
 		t.Fatalf("%v", v)
 	}
 }

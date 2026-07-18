@@ -10,7 +10,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.health.profile.v2"
+      "const": "bridge.health.profile.v1"
     },
     "candidate_algorithm": {
       "type": "string",

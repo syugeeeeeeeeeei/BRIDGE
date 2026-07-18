@@ -1,0 +1,7 @@
+{
+  "go_version": "go1.23.2",
+  "goos": "linux",
+  "goarch": "amd64",
+  "cpus": 56,
+  "captured_at": "2026-07-16T06:03:12.429947776Z"
+}

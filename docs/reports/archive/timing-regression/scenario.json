@@ -1,0 +1,57 @@
+{
+  "schema_version": "bridge.benchmark.v1",
+  "suite": {
+    "id": "simple-timing-check",
+    "description": "Small deterministic grid benchmark for timing integrity"
+  },
+  "execution": {
+    "repetitions": 10,
+    "warmup_runs": 2,
+    "seeds": [
+      7
+    ],
+    "jobs": 1,
+    "randomize_order": true
+  },
+  "algorithms": [
+    "bridge",
+    "anchor",
+    "astar",
+    "bidirectional_dijkstra"
+  ],
+  "observation_config": {
+    "level": "off",
+    "sample_rate": 1.0
+  },
+  "output": {
+    "capture_environment": true,
+    "metadata": {
+      "purpose": "timing-regression-check"
+    },
+    "output_dir": "/mnt/data/bridge_fix_work/benchmark-after-fix",
+    "artifact_id": "simple-timing-after-fix",
+    "save_raw_results": true
+  },
+  "scenarios": [
+    {
+      "id": "grid-open-10x10",
+      "graph": {
+        "generator": "grid",
+        "width": 10,
+        "height": 10,
+        "topology": "open",
+        "edge_weight_noise": 0.0
+      },
+      "endpoints": {
+        "query_selection_method": "generator_default_endpoints"
+      },
+      "route": {
+        "route_mode": "balanced",
+        "logical_worker_count": 1
+      },
+      "budget": {
+        "total_work": 100000
+      }
+    }
+  ]
+}

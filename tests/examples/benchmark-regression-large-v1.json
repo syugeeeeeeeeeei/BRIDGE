@@ -1,0 +1,76 @@
+{
+  "schema_version": "bridge.benchmark.v1",
+  "suite": {
+    "id": "benchmark-regression-large-v1",
+    "description": "Release-candidate scalability and memory regression suite."
+  },
+  "execution": {
+    "repetitions": 3,
+    "warmup_runs": 1,
+    "seeds": [
+      7
+    ],
+    "randomize_order": true,
+    "run_timeout": "120s"
+  },
+  "algorithms": [
+    "bridge",
+    "dijkstra",
+    "astar"
+  ],
+  "scenarios": [
+    {
+      "id": "grid-open-10000",
+      "graph": {
+        "generator": "grid",
+        "requested_node_count": 10000,
+        "topology": "open"
+      },
+      "route": {
+        "logical_worker_count": 1,
+        "mode": "balanced"
+      },
+      "budget": {
+        "work_limit": 15000000,
+        "search_time_limit": "90s"
+      },
+      "queries": [
+        {
+          "id": "default",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ]
+    },
+    {
+      "id": "maze-10000",
+      "graph": {
+        "generator": "maze",
+        "requested_node_count": 10000
+      },
+      "route": {
+        "logical_worker_count": 1,
+        "mode": "balanced"
+      },
+      "budget": {
+        "work_limit": 18000000,
+        "search_time_limit": "90s"
+      },
+      "queries": [
+        {
+          "id": "default",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ]
+    }
+  ],
+  "observation": {
+    "mode": "minimum"
+  },
+  "output": {
+    "directory": "./artifacts/regression-large"
+  }
+}

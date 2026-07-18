@@ -1,0 +1,79 @@
+{
+  "schema_version": "bridge.benchmark.v1",
+  "suite": {
+    "id": "benchmark-regression-v1",
+    "description": "Fixed-seed regression benchmark for v0.15.x performance and semantic regression checks."
+  },
+  "execution": {
+    "repetitions": 20,
+    "warmup_runs": 3,
+    "seeds": [
+      1,
+      7,
+      19
+    ],
+    "randomize_order": true,
+    "run_timeout": "15s"
+  },
+  "algorithms": [
+    "bridge",
+    "dijkstra",
+    "astar"
+  ],
+  "scenarios": [
+    {
+      "id": "grid-open-25",
+      "graph": {
+        "generator": "grid",
+        "requested_node_count": 25,
+        "topology": "open"
+      },
+      "route": {
+        "logical_worker_count": 1,
+        "mode": "balanced"
+      },
+      "budget": {
+        "work_limit": 50000,
+        "search_time_limit": "5.0s"
+      },
+      "queries": [
+        {
+          "id": "default",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ]
+    },
+    {
+      "id": "random-geometric-32",
+      "graph": {
+        "generator": "random_geometric",
+        "requested_node_count": 32,
+        "neighbor_candidate_count": 6
+      },
+      "route": {
+        "logical_worker_count": 1,
+        "mode": "balanced"
+      },
+      "budget": {
+        "work_limit": 50000,
+        "search_time_limit": "5.0s"
+      },
+      "queries": [
+        {
+          "id": "default",
+          "selection": {
+            "method": "generator_default"
+          }
+        }
+      ]
+    }
+  ],
+  "observation": {
+    "mode": "minimum"
+  },
+  "output": {
+    "directory": "./artifacts/regression"
+  }
+}

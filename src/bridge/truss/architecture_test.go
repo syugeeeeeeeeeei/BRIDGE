@@ -19,7 +19,7 @@ func TestArchitectureDependencies(t *testing.T) {
 		"truss":      {"core": true, "anchor": true, "bolts": true, "bearing": true},
 		"gate":       {"core": true, "truss": true, "bearing": true},
 		"ultrasound": {"core": true, "bearing": true},
-		"traffic":    {"core": true, "gate": true, "ultrasound": true},
+		"traffic":    {"core": true, "gate": true, "bearing": true, "ultrasound": true},
 	}
 	fset := token.NewFileSet()
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {

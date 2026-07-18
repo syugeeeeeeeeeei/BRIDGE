@@ -18,8 +18,11 @@ func TestV015OnlineIntegratedRoute(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !a.Found || !a.Exact || a.TerminationStatus != core.TerminationFound {
-		t.Fatalf("route not certified: %+v", a)
+	if !a.Found || a.TerminationStatus != core.TerminationFound {
+		t.Fatalf("route not found: %+v", a)
+	}
+	if a.Exact || a.QualityCertified {
+		t.Fatalf("quality-mode weighted route made unsupported proof claim: %+v", a)
 	}
 	if a.Telemetry["hypothesis_count"] != 1 {
 		t.Fatalf("single adaptive session not used: %+v", a.Telemetry)

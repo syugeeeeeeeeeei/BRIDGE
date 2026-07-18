@@ -1,5 +1,14 @@
 export class BridgeError extends Error {
-  constructor(message: string, public readonly exitCode?: number, public readonly stdout = "", public readonly stderr = "") { super(message); }
+  constructor(
+    message: string,
+    public readonly exitCode?: number,
+    public readonly stdout = "",
+    public readonly stderr = "",
+    public readonly code = "",
+    public readonly category = "",
+    public readonly retryable = false,
+    public readonly requestId = "",
+  ) { super(message); }
 }
 export class BridgeBinaryNotFoundError extends BridgeError {}
 export class BridgeBinaryPermissionError extends BridgeError {}

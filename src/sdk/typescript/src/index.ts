@@ -1,4 +1,4 @@
-export * from "./client.js";
-export * from "./errors.js";
+export { BridgeClient, SDK_VERSION } from "./client.js";
+export { BridgeServer } from "./server.js";
 export * from "./types.js";
-export * from "./discovery.js";
+export * from "./errors.js";

@@ -15,8 +15,9 @@ func TestQualityPreservesEarlierEqualDistanceCandidate(t *testing.T) {
 	if !res.Found || res.Distance != 2 {
 		t.Fatalf("unexpected quality result: %+v", res)
 	}
-	// v0.15.0 ranks proof strength before equal distance and Work.
-	if !res.Exact || !res.QualityCertified {
-		t.Fatalf("certified candidate was not preferred: %+v", res)
+	// Quality mode uses a weighted ANCHOR session. Finishing that session does
+	// not prove global optimality unless an independent certification pass ran.
+	if res.Exact || res.QualityCertified {
+		t.Fatalf("weighted search must not claim exact certification: %+v", res)
 	}
 }

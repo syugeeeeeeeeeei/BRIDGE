@@ -167,29 +167,17 @@ def build_cli(
 
 
 def bridge_version_from_source() -> str:
-    """Read the BRIDGE version constant from the CLI source."""
+    """Read the BRIDGE version from the single buildinfo source."""
 
-    main_go = (
-        ROOT
-        / "src"
-        / "products"
-        / "cli"
-        / "cmd"
-        / "bridge"
-        / "main.go"
-    )
+    buildinfo_go = ROOT / "src" / "buildinfo" / "buildinfo.go"
+    marker = 'Version   = "'
 
-    marker = 'const version = "'
-
-    for line in main_go.read_text(encoding="utf-8").splitlines():
+    for line in buildinfo_go.read_text(encoding="utf-8").splitlines():
         stripped = line.strip()
-
         if stripped.startswith(marker) and stripped.endswith('"'):
             return stripped[len(marker) : -1]
 
-    raise RuntimeError(
-        f"could not find CLI version in {main_go}"
-    )
+    raise RuntimeError(f"could not find BRIDGE version in {buildinfo_go}")
 
 
 def sha256(path: Path) -> str:
@@ -500,7 +488,6 @@ def test_cli() -> None:
         [
             str(binary),
             "route",
-            "--request",
             "tests/examples/route-request.json",
         ]
     )
@@ -746,7 +733,7 @@ def verify(
     run(
         [
             sys.executable,
-            "tests/compatibility/verify.py",
+            "tests/contracts/verify_glossary.py",
         ]
     )
 

@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bridge.local/schemas/benchmark-artifact-v1.schema.json",
+  "title": "BRIDGE Benchmark Artifact v3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "terminology_version", "suite_id", "execution_id", "output_directory", "run_metadata", "execution", "runs", "scenario_summaries"],
+  "properties": {
+    "schema_version": {"const": "bridge.benchmark.artifact.v1"},
+    "terminology_version": {"const": "bridge.terminology.v1"},
+    "suite_id": {"type": "string", "minLength": 1},
+    "execution_id": {"type": "string", "minLength": 1},
+    "output_directory": {"type": "string", "minLength": 1},
+    "run_metadata": {
+      "type": "object",
+      "required": ["scenario_schema_version", "started_at", "duration_ms", "execution_succeeded", "observation_mode"],
+      "properties": {
+        "scenario_schema_version": {"const": "bridge.benchmark.v1"},
+        "started_at": {"type": "string"}, "completed_at": {"type": "string"},
+        "duration_ms": {"type": "number", "minimum": 0},
+        "execution_succeeded": {"type": "boolean"},
+        "observation_mode": {"enum": ["off", "minimum", "debug", "trace"]}
+      }, "additionalProperties": false
+    },
+    "execution": {
+      "type": "object", "required": ["randomized", "run_order"],
+      "properties": {"randomized": {"type": "boolean"}, "shuffle_seed": {"type": "integer"}, "shuffle_algorithm": {"type": "string"}, "run_order": {"type": "array", "items": {"type": "string"}}},
+      "additionalProperties": false
+    },
+    "environment": {"type": ["object", "null"]},
+    "runs": {"type": "array", "items": {"$ref": "#/$defs/run"}},
+    "scenario_summaries": {"type": "array", "items": {"type": "object"}},
+    "failures": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "run": {
+      "type": "object", "additionalProperties": false,
+      "required": ["run_metadata", "scenario_definition", "graph_profile", "query_profile", "algorithm_configuration", "execution_result", "measurement", "observations", "references"],
+      "properties": {
+        "run_metadata": {"type": "object", "required": ["run_ordinal", "run_id", "run_name", "scenario_id", "graph_instance_id", "query_id", "algorithm_id", "execution_seed", "repetition_index", "warmup_run", "execution_succeeded"]},
+        "scenario_definition": {"type": "object"}, "graph_profile": {"type": "object"}, "query_profile": {"type": "object"},
+        "algorithm_configuration": {"type": "object"}, "execution_result": {"type": "object"}, "measurement": {"type": "object"},
+        "observations": {"type": "object"},
+        "references": {"type": "object", "properties": {"graph_snapshot_path": {"type": "string"}, "graph_snapshot_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "trace_manifest_path": {"type": "string"}, "trace_path": {"type": "string"}}}
+      }
+    }
+  }
+}

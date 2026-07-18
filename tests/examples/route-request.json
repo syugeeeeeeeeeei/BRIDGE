@@ -1,5 +1,5 @@
 {
-  "schema_version": "bridge.route.request.v2",
+  "schema_version": "bridge.route.request.v1",
   "request_id": "request-001",
   "graph": {
     "type": "inline",
@@ -38,6 +38,6 @@
     "timeout_ms": 5000
   },
   "observation_config": {
-    "level": "off"
+    "level": "minimum"
   }
 }

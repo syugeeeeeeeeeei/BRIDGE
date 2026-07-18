@@ -1,20 +1,15 @@
 # Reports Index
 
-`reports/` は履歴性の強い文書を目的別に分類した領域です。
+`docs/reports/current/`には、現行版に対する最新の状態説明と監査結果だけを置きます。
 
-## Categories
+`docs/reports/archive/`は履歴資料です。過去の監査、実装報告、移行記録、性能測定結果を保存しますが、現行仕様の根拠には使用しません。
 
-- `audits/`: 完了チェック、gap audit、implementation audit
-- `benchmarks/`: ベンチマーク結果、性能比較、runtime 評価
-- `implementation/`: 実装内容の要約、改修記録、反映報告
-- `migration/`: Go 移植、Python 比較、移行 readiness
-- `validation/`: 契約検証、意味論統制、コンポーネント整合
-- `data/`: レポートに紐づく JSON などの補助データ
-- `timing-regression/`: timing regression 再現用の入力と結果
+## Current
 
-## Classification Rule
+- `current/V0.15_DOCUMENTATION_CONTRACT_REFRESH.md`
+- `current/V0.15_NON_PERFORMANCE_STABILIZATION.md`
+- `current/V0.15_NON_PERFORMANCE_AUDIT_CHECKLIST.md`
 
-- 将来の新規文書は、恒久的な仕様なら `docs` 直下の各仕様系ディレクトリへ置く。
-- 実装時点の状態を記録する文書は `reports/` 配下へ置く。
-- チェックリストや完了判定は `audits/` を優先する。
-- 実験結果や比較評価は `benchmarks/` を優先する。
+## Rule
+
+恒久的な仕様は`docs/contracts/`、`docs/ARCHITECTURE_RULE.md`、各`COMPONENT_RULE.md`へ記載します。実装時点の報告や監査結果を規範文書へ昇格させてはなりません。

@@ -1,5 +1,5 @@
 {
-  "schema_version": "bridge.health.profile.v2",
+  "schema_version": "bridge.health.profile.v1",
   "candidate_algorithm": "bridge",
   "performance_reference_algorithm": "dijkstra",
   "exact_reference_algorithm": "dijkstra",

@@ -5,6 +5,7 @@ package bearing
 type EventKind string
 
 const (
+	KindLifecycle             EventKind = "lifecycle"
 	KindSearchStarted         EventKind = "search_started"
 	KindSearchFinished        EventKind = "search_finished"
 	KindComponentStarted      EventKind = "component_started"
@@ -35,6 +36,7 @@ const (
 )
 
 const (
+	ClassLifecycle = "lifecycle"
 	ClassControl   = "control"
 	ClassCandidate = "candidate"
 	ClassDetail    = "detail"
@@ -44,8 +46,9 @@ const (
 // ClassifyEvent defines which events are retained by each ULTRASOUND mode.
 func ClassifyEvent(kind string) string {
 	switch EventKind(kind) {
-	case KindSearchStarted, KindSearchFinished, KindComponentStarted, KindComponentFinished,
-		KindBudgetExtended, KindProgressReported, KindEmergencyReported, KindDirectiveIssued,
+	case KindLifecycle, KindSearchStarted, KindSearchFinished, KindComponentStarted, KindComponentFinished:
+		return ClassLifecycle
+	case KindBudgetExtended, KindProgressReported, KindEmergencyReported, KindDirectiveIssued,
 		KindFallbackStarted, KindFallbackFinished, KindCertificationStarted, KindCertificationFinished,
 		KindStateReuseStarted, KindStateReuseApplied, KindStateReuseRejected, KindStateReuseFinished:
 		return ClassControl

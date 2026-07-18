@@ -5,8 +5,8 @@ import (
 	"github.com/syugeeeeeeeeeei/BRIDGE/src/bridge/traffic"
 )
 
-const ProfileSchemaV1 = "bridge.health.profile.v2"
-const ResultSchemaV1 = "bridge.health.result.v2"
+const ProfileSchemaV1 = "bridge.health.profile.v1"
+const ResultSchemaV1 = "bridge.health.result.v1"
 
 type Status string
 

@@ -2,6 +2,7 @@ package ultrasound
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -17,6 +18,25 @@ type DebugSummary struct {
 	ComponentEventCounts   map[string]uint64 `json:"component_event_counts,omitempty"`
 }
 
+type SpanMetric struct {
+	RunID        string `json:"run_id,omitempty"`
+	SpanID       string `json:"span_id"`
+	ParentSpanID string `json:"parent_span_id,omitempty"`
+	Component    string `json:"component"`
+	Operation    string `json:"operation"`
+	StartedNS    int64  `json:"started_ns"`
+	CompletedNS  int64  `json:"completed_ns"`
+	DurationNS   int64  `json:"duration_ns"`
+	Failed       bool   `json:"failed,omitempty"`
+}
+
+type SpanSummary struct {
+	Completed      []SpanMetric `json:"completed,omitempty"`
+	Incomplete     uint64       `json:"incomplete"`
+	DuplicateStart uint64       `json:"duplicate_start"`
+	OrphanComplete uint64       `json:"orphan_complete"`
+}
+
 type CollectorMetrics struct {
 	EventCount     uint64         `json:"event_count"`
 	DroppedEvents  uint64         `json:"dropped_events"`
@@ -29,6 +49,12 @@ type CollectorMetrics struct {
 	QualityHistory []QualityPoint `json:"quality_history,omitempty"`
 	BudgetHistory  []BudgetPoint  `json:"budget_history,omitempty"`
 	DebugSummary   DebugSummary   `json:"debug_summary,omitempty"`
+	Spans          SpanSummary    `json:"spans,omitempty"`
+}
+
+type spanKey struct {
+	runID  string
+	spanID string
 }
 
 type Collector struct {
@@ -41,6 +67,7 @@ type Collector struct {
 	metrics     CollectorMetrics
 	err         error
 	closed      bool
+	openSpans   map[spanKey]SpanMetric
 }
 
 func NewCollector(mode string, sink EventSink) *Collector {
@@ -53,7 +80,8 @@ func NewCollectorWithLimit(mode string, sink EventSink, maxEvents uint64) *Colle
 	now := time.Now()
 	return &Collector{
 		mode: mode, sink: sink, start: now, last: now, maxEvents: maxEvents,
-		metrics: CollectorMetrics{Summary: TraceSummary{KindCounts: map[string]uint64{}, PhaseCounts: map[string]uint64{}}, DebugSummary: DebugSummary{ComponentEventCounts: map[string]uint64{}}},
+		metrics:   CollectorMetrics{Summary: TraceSummary{KindCounts: map[string]uint64{}, PhaseCounts: map[string]uint64{}}, DebugSummary: DebugSummary{ComponentEventCounts: map[string]uint64{}}, Spans: SpanSummary{Completed: make([]SpanMetric, 0, 16)}},
+		openSpans: map[spanKey]SpanMetric{},
 	}
 }
 
@@ -66,9 +94,9 @@ func (c *Collector) Wants(kind string) bool {
 		if kind == "state_delta" {
 			return true
 		}
-		return class == bearing.ClassControl || class == bearing.ClassCandidate
+		return class == bearing.ClassLifecycle || class == bearing.ClassControl || class == bearing.ClassCandidate
 	default:
-		return false
+		return class == bearing.ClassLifecycle
 	}
 }
 func (c *Collector) Observe(e bearing.Event) {
@@ -81,7 +109,7 @@ func (c *Collector) Observe(e bearing.Event) {
 	}
 	if c.mode == "debug" {
 		class := bearing.ClassifyEvent(e.Kind)
-		if class != bearing.ClassControl && class != bearing.ClassCandidate && e.Kind != string(bearing.KindFrontierSelected) && e.Kind != string(bearing.KindNodeExpanded) {
+		if class != bearing.ClassLifecycle && class != bearing.ClassControl && class != bearing.ClassCandidate && e.Kind != string(bearing.KindFrontierSelected) && e.Kind != string(bearing.KindNodeExpanded) {
 			return
 		}
 	} else if !c.Wants(e.Kind) {
@@ -128,6 +156,9 @@ func (c *Collector) Observe(e bearing.Event) {
 	if e.Component != "" {
 		c.metrics.DebugSummary.ComponentEventCounts[e.Component]++
 	}
+	if e.Kind == string(bearing.KindLifecycle) && e.SpanID != "" {
+		c.observeLifecycle(e)
+	}
 	switch bearing.EventKind(e.Kind) {
 	case bearing.KindCandidateSubmitted, bearing.KindIncumbentUpdated:
 		c.metrics.DebugSummary.CandidateUpdateCount++
@@ -153,10 +184,35 @@ func (c *Collector) Observe(e bearing.Event) {
 		c.metrics.BudgetHistory = append(c.metrics.BudgetHistory, BudgetPoint{Sequence: e.Sequence, Work: e.WorkAfter, FromExpand: uint64(attrUint32(e.Attributes, "from_expand")), ToExpand: uint64(attrUint32(e.Attributes, "to_expand"))})
 	}
 }
+func (c *Collector) observeLifecycle(e bearing.Event) {
+	key := spanKey{runID: e.RunID, spanID: e.SpanID}
+	switch bearing.LifecyclePhase(e.Phase) {
+	case bearing.LifecycleStarted:
+		if _, exists := c.openSpans[key]; exists {
+			c.metrics.Spans.DuplicateStart++
+			return
+		}
+		c.openSpans[key] = SpanMetric{RunID: e.RunID, SpanID: e.SpanID, ParentSpanID: e.ParentSpanID, Component: e.Component, Operation: e.Action, StartedNS: e.ElapsedNS}
+	case bearing.LifecycleCompleted, bearing.LifecycleFailed:
+		span, exists := c.openSpans[key]
+		if !exists {
+			c.metrics.Spans.OrphanComplete++
+			return
+		}
+		delete(c.openSpans, key)
+		span.CompletedNS = e.ElapsedNS
+		span.DurationNS = span.CompletedNS - span.StartedNS
+		span.Failed = bearing.LifecyclePhase(e.Phase) == bearing.LifecycleFailed
+		c.metrics.Spans.Completed = append(c.metrics.Spans.Completed, span)
+	}
+}
+
 func (c *Collector) Metrics() CollectorMetrics {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return cloneMetrics(c.metrics)
+	m := cloneMetrics(c.metrics)
+	m.Spans.Incomplete = uint64(len(c.openSpans))
+	return m
 }
 func cloneMetrics(m CollectorMetrics) CollectorMetrics {
 	m.Summary.KindCounts = cloneCounts(m.Summary.KindCounts)
@@ -164,6 +220,7 @@ func cloneMetrics(m CollectorMetrics) CollectorMetrics {
 	m.QualityHistory = append([]QualityPoint(nil), m.QualityHistory...)
 	m.BudgetHistory = append([]BudgetPoint(nil), m.BudgetHistory...)
 	m.DebugSummary.ComponentEventCounts = cloneCounts(m.DebugSummary.ComponentEventCounts)
+	m.Spans.Completed = append([]SpanMetric(nil), m.Spans.Completed...)
 	return m
 }
 func cloneCounts(in map[string]uint64) map[string]uint64 {
@@ -173,6 +230,25 @@ func cloneCounts(in map[string]uint64) map[string]uint64 {
 	}
 	return out
 }
+
+// Reset starts a new observation run while preserving the collector configuration.
+// A collector is otherwise a one-run object; callers that intentionally reuse it MUST call Reset.
+func (c *Collector) Reset() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if !c.closed {
+		return fmt.Errorf("collector must be closed before reset")
+	}
+	now := time.Now()
+	c.start, c.last = now, now
+	c.seq = 0
+	c.metrics = CollectorMetrics{Summary: TraceSummary{KindCounts: map[string]uint64{}, PhaseCounts: map[string]uint64{}}, DebugSummary: DebugSummary{ComponentEventCounts: map[string]uint64{}}, Spans: SpanSummary{Completed: make([]SpanMetric, 0, 16)}}
+	c.err = nil
+	c.closed = false
+	c.openSpans = map[spanKey]SpanMetric{}
+	return nil
+}
+
 func (c *Collector) ObservationMode() string          { return c.mode }
 func (c *Collector) ObservationEventCount() uint64    { return c.Metrics().EventCount }
 func (c *Collector) ObservationDroppedEvents() uint64 { return c.Metrics().DroppedEvents }
@@ -181,6 +257,7 @@ func (c *Collector) ObservationOverheadNS() int64     { return c.Metrics().Obser
 func (c *Collector) ObservationSinkWriteNS() int64    { return c.Metrics().SinkWriteNS }
 func (c *Collector) TraceSummary() TraceSummary       { return c.Metrics().Summary }
 func (c *Collector) ObservationSummary() any          { return c.Metrics().Summary }
+func (c *Collector) ObservationSpans() any            { return c.Metrics().Spans }
 func (c *Collector) Err() error                       { c.mu.Lock(); defer c.mu.Unlock(); return c.err }
 func (c *Collector) Close(ctx context.Context) error {
 	c.mu.Lock()

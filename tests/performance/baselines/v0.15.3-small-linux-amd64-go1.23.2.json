@@ -1,0 +1,128 @@
+{
+  "schema_version": "bridge.performance-regression-baseline.v1",
+  "suite_id": "benchmark-regression-small-v1",
+  "source_artifact": "1784111022941-3922037a7861ae694c9a",
+  "environment": {
+    "go_version": "go1.23.2",
+    "goos": "linux",
+    "goarch": "amd64",
+    "cpus": 56
+  },
+  "policy": {
+    "tier": "small",
+    "semantic": {
+      "path_found_rate_min": 1.0,
+      "exact_algorithms_optimality_rate_min": 1.0,
+      "bridge_false_optimality_max": 0.0,
+      "work_p50_max_increase_ratio": 0.0
+    },
+    "performance": {
+      "solver_time_p50_max_increase_ratio": 0.35,
+      "solver_time_p95_max_increase_ratio": 0.5,
+      "end_to_end_p50_max_increase_ratio": 0.35,
+      "end_to_end_p95_max_increase_ratio": 0.5,
+      "alloc_bytes_p50_max_increase_ratio": 0.15,
+      "alloc_bytes_p95_max_increase_ratio": 0.2
+    },
+    "minimum_sample_count": 60,
+    "environment_match_required": true
+  },
+  "entries": {
+    "grid-open-400/astar/default": {
+      "scenario_id": "grid-open-400",
+      "algorithm": "astar",
+      "query_id": "default",
+      "runs": 60,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 1.0,
+      "work_p50": 5638.0,
+      "work_p95": 5649.0,
+      "solver_time_p50_ms": 0.338316,
+      "solver_time_p95_ms": 0.8300462999999997,
+      "end_to_end_p50_ms": 0.497231,
+      "end_to_end_p95_ms": 1.3024371499999998,
+      "alloc_bytes_p50": 254776.0,
+      "alloc_bytes_p95": 255369.6
+    },
+    "grid-open-400/bridge/default": {
+      "scenario_id": "grid-open-400",
+      "algorithm": "bridge",
+      "query_id": "default",
+      "runs": 60,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 0.0,
+      "work_p50": 739.0,
+      "work_p95": 740.0,
+      "solver_time_p50_ms": 0.2741305,
+      "solver_time_p95_ms": 1.1424995500000001,
+      "end_to_end_p50_ms": 0.414018,
+      "end_to_end_p95_ms": 1.25850015,
+      "alloc_bytes_p50": 346124.0,
+      "alloc_bytes_p95": 355276.4
+    },
+    "grid-open-400/dijkstra/default": {
+      "scenario_id": "grid-open-400",
+      "algorithm": "dijkstra",
+      "query_id": "default",
+      "runs": 60,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 1.0,
+      "work_p50": 5518.0,
+      "work_p95": 5532.0,
+      "solver_time_p50_ms": 0.31493550000000003,
+      "solver_time_p95_ms": 0.8772807499999999,
+      "end_to_end_p50_ms": 0.46618000000000004,
+      "end_to_end_p95_ms": 1.2544733499999998,
+      "alloc_bytes_p50": 251432.0,
+      "alloc_bytes_p95": 252200.0
+    },
+    "random-geometric-500/astar/default": {
+      "scenario_id": "random-geometric-500",
+      "algorithm": "astar",
+      "query_id": "default",
+      "runs": 60,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 1.0,
+      "work_p50": 3446.0,
+      "work_p95": 3671.0,
+      "solver_time_p50_ms": 0.2042925,
+      "solver_time_p95_ms": 0.4710109499999999,
+      "end_to_end_p50_ms": 0.561646,
+      "end_to_end_p95_ms": 1.26074815,
+      "alloc_bytes_p50": 311464.0,
+      "alloc_bytes_p95": 321277.6
+    },
+    "random-geometric-500/bridge/default": {
+      "scenario_id": "random-geometric-500",
+      "algorithm": "bridge",
+      "query_id": "default",
+      "runs": 60,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 0.0,
+      "work_p50": 892.0,
+      "work_p95": 892.0,
+      "solver_time_p50_ms": 0.40930049999999996,
+      "solver_time_p95_ms": 1.5627091499999999,
+      "end_to_end_p50_ms": 0.784726,
+      "end_to_end_p95_ms": 1.9401572999999999,
+      "alloc_bytes_p50": 565416.0,
+      "alloc_bytes_p95": 578154.8
+    },
+    "random-geometric-500/dijkstra/default": {
+      "scenario_id": "random-geometric-500",
+      "algorithm": "dijkstra",
+      "query_id": "default",
+      "runs": 60,
+      "path_found_rate": 1.0,
+      "optimality_proven_rate": 1.0,
+      "work_p50": 15504.0,
+      "work_p95": 15526.0,
+      "solver_time_p50_ms": 0.6357655,
+      "solver_time_p95_ms": 1.4432037999999996,
+      "end_to_end_p50_ms": 0.9893540000000001,
+      "end_to_end_p95_ms": 2.134227599999999,
+      "alloc_bytes_p50": 472312.0,
+      "alloc_bytes_p95": 477369.60000000003
+    }
+  }
+}

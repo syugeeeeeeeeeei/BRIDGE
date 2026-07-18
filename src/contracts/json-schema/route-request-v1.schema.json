@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "bridge.route.request.v2",
+  "$id": "bridge.route.request.v1",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -10,7 +10,7 @@
   ],
   "properties": {
     "schema_version": {
-      "const": "bridge.route.request.v2"
+      "const": "bridge.route.request.v1"
     },
     "request_id": {
       "type": "string"

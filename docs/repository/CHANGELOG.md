@@ -1,5 +1,15 @@
+# v0.15.x maintenance
+
+- 現行仕様と履歴報告を分離し、過去資料を`docs/reports/archive/`へ集約。
+- 存在しないlegacy実装を参照する互換試験を廃止し、用語契約検査へ置換。
+- 非製品の比較Runner、ソースツリー内の生成Artifact、手管理のFILE_MANIFESTを削除。
+- 性能・探索アルゴリズム・Schema v1公開契約は変更なし。
+
 # v0.15.0
 
+- Python・TypeScript SDKへ`solver/local`と`server/http`の2種類のTransportを追加。
+- SDKから`bridge serve`を起動し、readiness確認後にHTTP Clientを取得できる`BridgeServer`を追加。
+- Local Process TransportとHTTP Transportで同一の`route`、`version`、`capabilities` APIを提供。
 - Introduced resumable ANCHOR sessions, v2 domain contracts, and decomposed TRUSS service primitives.
 - Removed the detached legacy ANCHOR search body.
 - See `docs/reports/audits/V0.15.0_IMPLEMENTATION_AUDIT.md` for strict release status.

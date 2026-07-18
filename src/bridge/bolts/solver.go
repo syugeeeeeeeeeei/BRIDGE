@@ -270,6 +270,8 @@ func (s WeightedAStar) Solve(ctx context.Context, g core.Graph, r core.RouteRequ
 	return search(ctx, g, r, b, o, s.Name(), w, true)
 }
 func search(ctx context.Context, g core.Graph, r core.RouteRequest, b core.WorkBudget, o bearing.Observer, name string, hWeight float64, useH bool) core.RouteResult {
+	lifecycle := bearing.StartLifecycle(o, "", name, "", "BOLTS", name)
+	defer func() { lifecycle.Finish(false) }()
 	start := time.Now()
 	n := g.NodeCount()
 	dist := make([]float64, n)
@@ -288,7 +290,9 @@ func search(ctx context.Context, g core.Graph, r core.RouteRequest, b core.WorkB
 	q := &pq{}
 	heap.Init(q)
 	metrics := core.WorkMetrics{WorkerCount: uint32(maxInt(1, r.Workers))}
-	o.Observe(bearing.Event{TaskID: name, Kind: "search_started", Phase: name, Attributes: map[string]any{"action_budget": b.MaxWork, "expand_budget": b.MaxExpand, "work_definition": "work_model_v2"}})
+	if bearing.Wants(o, "debug") {
+		o.Observe(bearing.Event{TaskID: name, Kind: "search_started", Phase: name, Attributes: map[string]any{"action_budget": b.MaxWork, "expand_budget": b.MaxExpand, "work_definition": "work_model_v2"}})
+	}
 	emit := func(kind string, attrs map[string]any) {
 		o.Observe(bearing.Event{TaskID: name, Component: "BOLTS", Kind: kind, Phase: name, LogicalStep: metrics.LogicalSteps, ScheduledStep: metrics.ScheduledSteps, WorkAfter: metrics.TotalActions, Attributes: attrs})
 	}
@@ -363,7 +367,9 @@ func search(ctx context.Context, g core.Graph, r core.RouteRequest, b core.WorkB
 		}
 		settled[u] = true
 		exp++
-		emit("node_expanded", map[string]any{"node": u, "distance": dist[u], "frontier_size": q.Len()})
+		if bearing.Wants(o, "state_delta") {
+			emit("node_expanded", map[string]any{"node": u, "distance": dist[u], "frontier_size": q.Len()})
+		}
 		if u == r.Target {
 			found = true
 			break
@@ -434,7 +440,9 @@ func search(ctx context.Context, g core.Graph, r core.RouteRequest, b core.WorkB
 	if useH && hWeight == 1 && !exhausted {
 		exact = true
 	}
-	emit("search_finished", map[string]any{"found": found, "work": metrics.TotalActions, "expand": metrics.ExpandActions, "relax": rel, "queue_pushes": push, "queue_pops": pop, "budget_exhausted": exhausted, "path": path})
+	if bearing.Wants(o, "debug") {
+		emit("search_finished", map[string]any{"found": found, "work": metrics.TotalActions, "expand": metrics.ExpandActions, "relax": rel, "queue_pushes": push, "queue_pops": pop, "budget_exhausted": exhausted, "path": path})
+	}
 	res := core.RouteResult{Path: path, Distance: dist[r.Target], Found: found, Exact: exact, SolverName: name, Work: metrics, WorkRelaxations: rel, WorkExpandedNodes: exp, QueuePushes: push, QueuePops: pop, ParallelSteps: metrics.ScheduledSteps, TimeMS: float64(time.Since(start).Nanoseconds()) / 1_000_000, BudgetExhausted: exhausted, Telemetry: map[string]any{"budget_exhausted": exhausted, "work_definition": "work_model_v2", "investigated_nodes": metrics.ExpandActions, "investigated_node_ratio": float64(metrics.ExpandActions) / float64(maxInt(1, n)), "investigated_edges": len(evaluatedEdges), "investigated_edge_ratio": float64(len(evaluatedEdges)) / float64(maxInt(1, edgeSlots(g))), "investigated_node_ids": boolNodeIDs(settled), "investigated_edge_ids": encodedEdgeIDs(evaluatedEdges), "candidate_paths": func() uint64 {
 		if found {
 			return 1
