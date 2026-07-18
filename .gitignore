@@ -43,6 +43,7 @@ pnpm-debug.log*
 /src/sdk/typescript/bin/
 /src/sdk/typescript/*.tgz
 /src/sdk/typescript/binary-manifest.json
+/src/sdk/typescript/.npmrc
 
 # IDEs and editors
 .idea/

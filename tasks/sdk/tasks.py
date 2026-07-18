@@ -553,6 +553,19 @@ def publish_typescript_package() -> None:
     if not os.environ.get("NODE_AUTH_TOKEN"):
         raise RuntimeError("NODE_AUTH_TOKEN is required for GitHub Packages publishing")
 
+    npmrc = TYPESCRIPT_SDK / ".npmrc"
+    npmrc.write_text(
+        "\n".join(
+            [
+                f"@{NPM_PACKAGE_NAME.split('/')[0][1:]}:registry={GITHUB_PACKAGES_REGISTRY}",
+                "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}",
+                "always-auth=true",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
     view_command = resolve_command(
         [
             "npm",
@@ -577,7 +590,16 @@ def publish_typescript_package() -> None:
             f"{NPM_PACKAGE_NAME}@{expected_release_version()} is already published"
         )
 
-    run(["npm", "publish", str(archive)], cwd=TYPESCRIPT_SDK)
+    run(
+        [
+            "npm",
+            "publish",
+            str(archive),
+            "--registry",
+            GITHUB_PACKAGES_REGISTRY,
+        ],
+        cwd=TYPESCRIPT_SDK,
+    )
 
 
 def main() -> int:
