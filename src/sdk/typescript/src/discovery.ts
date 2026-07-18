@@ -1,5 +1,5 @@
 import { accessSync, constants, existsSync } from "node:fs";
-import { delimiter, dirname, join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { BridgeBinaryNotFoundError, BridgeBinaryPermissionError } from "./errors.js";
 
@@ -9,18 +9,11 @@ function platformKey(): string {
   if (!os || !arch) throw new BridgeBinaryNotFoundError(`unsupported platform: ${process.platform}/${process.arch}`);
   return `${os}-${arch}`;
 }
-function pathCandidate(): string | undefined {
-  const exe = process.platform === "win32" ? "bridge.exe" : "bridge";
-  for (const dir of (process.env.PATH ?? "").split(delimiter)) {
-    const p = join(dir, exe); if (existsSync(p)) return p;
-  }
-  return undefined;
-}
 export function resolveBinary(binaryPath?: string): string {
   const exe = process.platform === "win32" ? "bridge.exe" : "bridge";
   const moduleDir = dirname(fileURLToPath(import.meta.url));
   const bundled = join(moduleDir, "..", "bin", platformKey(), exe);
-  const candidates = [binaryPath, process.env.BRIDGE_BINARY, bundled, pathCandidate()].filter((v): v is string => Boolean(v));
+  const candidates = [binaryPath, process.env.BRIDGE_BINARY, bundled].filter((v): v is string => Boolean(v));
   for (const p of candidates) {
     if (!existsSync(p)) continue;
     if (process.platform !== "win32") {

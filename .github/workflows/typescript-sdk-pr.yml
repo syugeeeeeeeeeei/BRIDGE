@@ -1,0 +1,32 @@
+name: TypeScript SDK Package Check
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/typescript-sdk-pr.yml"
+      - "mise.toml"
+      - "tasks/**"
+      - "src/buildinfo/**"
+      - "src/bridge/**"
+      - "src/products/**"
+      - "src/sdk/typescript/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: typescript-sdk-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup mise
+        uses: jdx/mise-action@v2
+
+      - name: Build and verify package candidate
+        run: mise run sdk:typescript:release-package

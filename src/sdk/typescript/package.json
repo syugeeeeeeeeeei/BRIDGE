@@ -1,6 +1,7 @@
 {
-  "name": "@bridge/route-sdk",
+  "name": "@syugeeeeeeeeeei/bridge",
   "version": "0.15.3",
+  "description": "TypeScript SDK and bundled native binaries for BRIDGE",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,8 +10,22 @@
     "bin",
     "binary-manifest.json",
     "README.md",
-    "examples"
+    "examples",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/syugeeeeeeeeeei/BRIDGE.git",
+    "directory": "src/sdk/typescript"
+  },
+  "homepage": "https://github.com/syugeeeeeeeeeei/BRIDGE#readme",
+  "bugs": {
+    "url": "https://github.com/syugeeeeeeeeeei/BRIDGE/issues"
+  },
+  "license": "UNLICENSED",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test test/*.test.mjs"

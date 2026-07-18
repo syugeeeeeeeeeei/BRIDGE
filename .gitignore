@@ -40,7 +40,9 @@ pnpm-debug.log*
 
 # TypeScript SDK outputs
 /src/sdk/typescript/dist/
+/src/sdk/typescript/bin/
 /src/sdk/typescript/*.tgz
+/src/sdk/typescript/binary-manifest.json
 
 # IDEs and editors
 .idea/
