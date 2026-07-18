@@ -5,9 +5,10 @@ node = "latest"
 
 [task_config]
 includes = [
-  "tasks/mise.tasks.setup.toml",
-  "tasks/mise.tasks.build.toml",
-  "tasks/mise.tasks.sdk.toml",
-  "tasks/mise.tasks.test.toml",
-  "tasks/mise.tasks.verify.toml",
+  "tasks/project/mise.toml",
+  "tasks/release/mise.toml",
+  "tasks/setup/mise.toml",
+  "tasks/build/mise.toml",
+  "tasks/sdk/mise.toml",
+  "tasks/test/mise.toml",
 ]

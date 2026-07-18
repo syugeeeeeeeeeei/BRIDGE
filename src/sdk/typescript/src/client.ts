@@ -13,7 +13,7 @@ import {
 } from "./errors.js";
 import type { RouteRequest, RouteResponse, RouteResult } from "./types.js";
 
-export const SDK_VERSION = "0.15.3";
+export const SDK_VERSION = "0.16.0";
 const REQUIRED_ROUTE_SCHEMA = "bridge.route.result.v1";
 
 export interface SolverOptions { binaryPath?: string; defaultTimeoutMs?: number; verifyCompatibility?: boolean }

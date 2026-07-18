@@ -1,0 +1,4 @@
+["publish"]
+description = "Verify the current version, create its release tag, and push it"
+usage = ""
+run = "python ./tasks/release/tasks.py publish"

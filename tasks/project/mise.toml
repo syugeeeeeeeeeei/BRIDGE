@@ -1,0 +1,8 @@
+["project-version"]
+description = "Print or update synchronized BRIDGE project versions"
+usage = '''
+arg "value" help="Version, add, or sub" default=""
+arg "part" help="patch, minor, or major" default=""
+'''
+run = "python ./tasks/project/tasks.py project-version ${usage_value} ${usage_part}"
+run_windows = "python ./tasks/project/tasks.py project-version %usage_value% %usage_part%"

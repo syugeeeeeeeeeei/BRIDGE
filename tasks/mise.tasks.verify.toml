@@ -1,8 +1,0 @@
-[verify]
-description = "Run release-level verification including SDK binary refresh"
-depends = ["sdk:binaries"]
-run = "python ./tasks/dev_tasks.py verify"
-
-["verify:quick"]
-description = "Run release-level checks without rebuilding SDK binaries"
-run = "python ./tasks/dev_tasks.py verify --skip-sdk-binaries"

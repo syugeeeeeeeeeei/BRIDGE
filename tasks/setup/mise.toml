@@ -1,7 +1,9 @@
 [setup]
 description = "Install project development dependencies"
-run = "python ./tasks/dev_tasks.py setup"
+usage = ""
+run = "python ./tasks/setup/tasks.py setup"
 
 [clean]
 description = "Remove generated build and package artifacts"
-run = "python ./tasks/dev_tasks.py clean"
+usage = ""
+run = "python ./tasks/setup/tasks.py clean"

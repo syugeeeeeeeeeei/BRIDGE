@@ -1,35 +1,58 @@
 ["test:go"]
 description = "Run all Go tests without cached results"
+usage = ""
 run = "go test -count=1 ./..."
 
 ["test:race"]
 description = "Run the Go race detector"
+usage = ""
 run = "go test -race ./..."
 
 ["test:vet"]
 description = "Run Go static analysis"
+usage = ""
 run = "go vet ./..."
 
 ["test:cli"]
 description = "Build and smoke-test the BRIDGE CLI"
-run = "python ./tasks/dev_tasks.py test-cli"
+usage = ""
+run = "python ./tasks/test/tasks.py test-cli"
 
 ["test:python"]
 description = "Run Python SDK tests"
+usage = ""
 run = "python -m unittest discover -s ./src/sdk/python/tests -v"
 
 ["test:typescript"]
 description = "Run TypeScript SDK build and tests"
-run = "npm test --prefix ./src/sdk/typescript"
+usage = ""
+run = "python ./tasks/sdk/tasks.py test-typescript"
 
 ["test:contracts"]
 description = "Run documentation and terminology contract checks"
+usage = ""
 run = "python ./tests/contracts/verify_glossary.py"
 
 ["benchmark"]
-description = "Run a benchmark scenario via `mise run benchmark <scenario> [options]`"
-run = "python ./tasks/dev_tasks.py benchmark-run"
+description = "Run a benchmark scenario"
+usage = '''
+arg "scenario" help="Path to the benchmark scenario YAML or JSON file"
+'''
+run = "python ./tasks/test/tasks.py benchmark-run ${usage_scenario}"
+run_windows = "python ./tasks/test/tasks.py benchmark-run %usage_scenario%"
 
 [test]
 description = "Run the normal development test suite"
+usage = ""
 depends = ["test:go", "test:vet", "test:cli", "test:python", "test:typescript", "test:contracts"]
+
+[verify]
+description = "Run release-level verification including SDK binary refresh"
+usage = ""
+depends = ["sdk:binaries"]
+run = "python ./tasks/test/tasks.py verify"
+
+["verify:quick"]
+description = "Run release-level checks without rebuilding SDK binaries"
+usage = ""
+run = "python ./tasks/test/tasks.py verify --skip-sdk-binaries"

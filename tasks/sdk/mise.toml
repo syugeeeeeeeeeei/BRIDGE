@@ -1,54 +1,57 @@
-["project-version"]
-description = "Print or update synchronized BRIDGE project versions"
-run = "python ./tasks/dev_tasks.py project-version"
-
-["publish"]
-description = "Verify the current version, create its release tag, and push it"
-run = "python ./tasks/dev_tasks.py publish"
-
 ["sdk:binaries"]
 description = "Build and bundle BRIDGE binaries for all supported SDK platforms"
-run = "python ./tasks/dev_tasks.py sdk-binaries"
+usage = ""
+run = "python ./tasks/sdk/tasks.py sdk-binaries"
 
 ["sdk:python:package"]
 description = "Build the Python SDK package"
-run = "python ./tasks/dev_tasks.py package-python"
+usage = ""
+run = "python ./tasks/sdk/tasks.py package-python"
 
 ["sdk:typescript:install"]
 description = "Install TypeScript SDK dependencies"
-run = "python ./tasks/dev_tasks.py install-typescript"
+usage = ""
+run = "python ./tasks/sdk/tasks.py install-typescript"
 
 ["sdk:typescript:build"]
 description = "Build the TypeScript SDK dist output"
-run = "python ./tasks/dev_tasks.py build-typescript"
+usage = ""
+run = "python ./tasks/sdk/tasks.py build-typescript"
 
 ["sdk:typescript:test"]
 description = "Run TypeScript SDK tests"
-run = "python ./tasks/dev_tasks.py test-typescript"
+usage = ""
+run = "python ./tasks/sdk/tasks.py test-typescript"
 
 ["sdk:typescript:pack"]
 description = "Create the TypeScript SDK npm package tarball"
-run = "python ./tasks/dev_tasks.py pack-typescript"
+usage = ""
+run = "python ./tasks/sdk/tasks.py pack-typescript"
 
 ["sdk:typescript:verify-package"]
 description = "Verify the generated TypeScript SDK npm tarball"
-run = "python ./tasks/dev_tasks.py verify-typescript-package"
+usage = ""
+run = "python ./tasks/sdk/tasks.py verify-typescript-package"
 
 ["sdk:typescript:release-package"]
 description = "Build and verify the GitHub Packages TypeScript SDK release candidate"
-run = "python ./tasks/dev_tasks.py release-typescript-package"
+usage = ""
+run = "python ./tasks/sdk/tasks.py release-typescript-package"
 
 ["sdk:typescript:publish"]
 description = "Publish the verified TypeScript SDK tarball to GitHub Packages"
-run = "python ./tasks/dev_tasks.py publish-typescript-package"
+usage = ""
+run = "python ./tasks/sdk/tasks.py publish-typescript-package"
 
 ["sdk:typescript:package"]
 description = "Install dependencies and build the TypeScript SDK package"
+usage = ""
 depends = ["sdk:typescript:install"]
-run = "python ./tasks/dev_tasks.py package-typescript"
+run = "python ./tasks/sdk/tasks.py package-typescript"
 
 ["sdk:package"]
 description = "Build Python and TypeScript SDK packages"
+usage = ""
 depends = [
   "sdk:python:package",
   "sdk:typescript:package",

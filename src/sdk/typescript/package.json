@@ -1,6 +1,6 @@
 {
   "name": "@syugeeeeeeeeeei/bridge",
-  "version": "0.15.3",
+  "version": "0.16.0",
   "description": "TypeScript SDK and bundled native binaries for BRIDGE",
   "type": "module",
   "main": "dist/index.js",
