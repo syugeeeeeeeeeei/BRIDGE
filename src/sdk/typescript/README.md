@@ -67,7 +67,7 @@ try {
 ## 開発とローカル検査
 
 ```bash
-mise run sdk:typescript:release-package
+mise run package
 ```
 
 このタスクは、クリーン、バイナリ生成、依存関係インストール、TypeScriptビルド、テスト、`npm pack`、tarball検査を同じ順序で実行します。検査対象はSDKディレクトリではなく、実際に公開される`.tgz`です。

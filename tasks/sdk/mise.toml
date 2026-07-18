@@ -1,57 +1,68 @@
 ["sdk:binaries"]
 description = "Build and bundle BRIDGE binaries for all supported SDK platforms"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py sdk-binaries"
 
 ["sdk:python:package"]
 description = "Build the Python SDK package"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py package-python"
 
 ["sdk:typescript:install"]
 description = "Install TypeScript SDK dependencies"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py install-typescript"
 
 ["sdk:typescript:build"]
 description = "Build the TypeScript SDK dist output"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py build-typescript"
 
 ["sdk:typescript:test"]
 description = "Run TypeScript SDK tests"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py test-typescript"
 
 ["sdk:typescript:pack"]
 description = "Create the TypeScript SDK npm package tarball"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py pack-typescript"
 
 ["sdk:typescript:verify-package"]
 description = "Verify the generated TypeScript SDK npm tarball"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py verify-typescript-package"
 
 ["sdk:typescript:release-package"]
 description = "Build and verify the GitHub Packages TypeScript SDK release candidate"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py release-typescript-package"
 
 ["sdk:typescript:publish"]
 description = "Publish the verified TypeScript SDK tarball to GitHub Packages"
 usage = ""
+hide = true
 run = "python ./tasks/sdk/tasks.py publish-typescript-package"
 
 ["sdk:typescript:package"]
 description = "Install dependencies and build the TypeScript SDK package"
 usage = ""
+hide = true
 depends = ["sdk:typescript:install"]
 run = "python ./tasks/sdk/tasks.py package-typescript"
 
 ["sdk:package"]
 description = "Build Python and TypeScript SDK packages"
 usage = ""
+hide = true
 depends = [
   "sdk:python:package",
   "sdk:typescript:package",

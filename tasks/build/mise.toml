@@ -6,9 +6,11 @@ run = "python ./tasks/build/tasks.py"
 ["build:debug"]
 description = "Build an unstripped BRIDGE CLI for the current platform"
 usage = ""
+hide = true
 run = "python ./tasks/build/tasks.py --debug"
 
 ["build:release"]
 description = "Build a stripped BRIDGE CLI for the current platform"
 usage = ""
+hide = true
 run = "python ./tasks/build/tasks.py --release"

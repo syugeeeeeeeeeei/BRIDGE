@@ -41,7 +41,7 @@ jobs:
         uses: jdx/mise-action@v2
 
       - name: Build and verify package candidate
-        run: mise run sdk:typescript:release-package
+        run: mise run package
 
       - name: Publish verified package
         run: mise run sdk:typescript:publish
